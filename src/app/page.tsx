@@ -236,7 +236,7 @@ const SUGGS = [
 ]
 
 // ─── MODAL: Add Chore ─────────────────────────────────────────────────────────
-function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any) => Promise<void> }) {
+function AddChoreModal({ onClose, onAdd, nameA, nameB }: { onClose: () => void; onAdd: (f: any) => Promise<void>; nameA?: string; nameB?: string }) {
   const [form, setForm] = useState({ name:'', room:'', icon:'🧹', assigned:'Both' as 'A'|'B'|'Both', default_freq_days:7 })
   const [saving, setSaving] = useState(false)
   const rooms = ['Kitchen','Bathroom','Bedroom','Living Room','Laundry','Whole house','Outside']
@@ -274,7 +274,7 @@ function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any
           <div className="form-group">
             <label className="form-label">Assigned to</label>
             <select className="form-input" value={form.assigned} onChange={e=>setForm({...form,assigned:e.target.value as any})}>
-              {['Both','A','B'].map(a=><option key={a}>{a}</option>)}
+              {[['Both', `Both (${nameA||'A'} & ${nameB||'B'})`],['A', nameA||'Person A'],['B', nameB||'Person B']].map(([val,lbl])=><option key={val} value={val}>{lbl}</option>)}
             </select>
           </div>
           <div className="form-group">
@@ -296,7 +296,7 @@ function AddChoreModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any
 
 
 // ─── MODAL: Edit Chore ────────────────────────────────────────────────────────
-function EditChoreModal({ chore, onClose, onSave }: { chore: Chore; onClose: () => void; onSave: (id: string, f: any) => Promise<void> }) {
+function EditChoreModal({ chore, onClose, onSave, nameA, nameB }: { chore: Chore; onClose: () => void; onSave: (id: string, f: any) => Promise<void>; nameA?: string; nameB?: string }) {
   const [form, setForm] = useState({
     name: chore.name,
     room: chore.room,
@@ -343,7 +343,7 @@ function EditChoreModal({ chore, onClose, onSave }: { chore: Chore; onClose: () 
             {(['Both','A','B'] as const).map(a => (
               <button key={a} onClick={()=>setForm({...form,assigned:a})}
                 style={{flex:1,padding:'.6rem',borderRadius:'9px',border:`2px solid ${form.assigned===a?'var(--terra)':'rgba(193,113,79,.2)'}`,background:form.assigned===a?'var(--terra)':'white',color:form.assigned===a?'white':'var(--charcoal)',cursor:'pointer',fontFamily:"'Lato',sans-serif",fontWeight:'700',fontSize:'.82rem',transition:'all .15s'}}>
-                {a === 'Both' ? '👫 Both' : a === 'A' ? '👤 Person A' : '👤 Person B'}
+                {a === 'Both' ? '👫 Both' : a === 'A' ? `👤 ${nameA || 'Person A'}` : `👤 ${nameB || 'Person B'}`}
               </button>
             ))}
           </div>
@@ -368,13 +368,15 @@ function EditChoreModal({ chore, onClose, onSave }: { chore: Chore; onClose: () 
 }
 
 // ─── CHORES TAB ───────────────────────────────────────────────────────────────
-function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete }: {
+function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete, nameA, nameB }: {
   chores: (Chore & { chore_completions: any[] })[]
   loading: boolean
   onMarkDone: (id: string) => Promise<void>
   onAdd: (f: any) => Promise<void>
   onEdit: (id: string, f: any) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  nameA: string
+  nameB: string
 }) {
   const [filter, setFilter] = useState('all')
   const [showModal, setShowModal] = useState(false)
@@ -402,8 +404,8 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete }: {
 
   return (
     <div>
-      {showModal && <AddChoreModal onClose={() => setShowModal(false)} onAdd={onAdd} />}
-      {editChore && <EditChoreModal chore={editChore} onClose={() => setEditChore(null)} onSave={onEdit} />}
+      {showModal && <AddChoreModal onClose={() => setShowModal(false)} onAdd={onAdd} nameA={nameA} nameB={nameB} />}
+      {editChore && <EditChoreModal chore={editChore} onClose={() => setEditChore(null)} onSave={onEdit} nameA={nameA} nameB={nameB} />}
       <div className="section-hdr">
         <div>
           <h2 className="section-title">Chore <span>Tracker</span></h2>
@@ -451,9 +453,9 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete }: {
                   </div>
                 </div>
                 <div className="assignees">
-                  {chore.assigned==='Both'?<><div className="av">A</div><div className="av b">B</div><span className="av-lbl">Both</span></>:
-                   chore.assigned==='A'?<><div className="av">A</div><span className="av-lbl">Person A</span></>:
-                   <><div className="av b">B</div><span className="av-lbl">Person B</span></>}
+                  {chore.assigned==='Both'?<><div className="av">{nameA[0]}</div><div className="av b">{nameB[0]}</div><span className="av-lbl">{nameA} &amp; {nameB}</span></>:
+                   chore.assigned==='A'?<><div className="av">{nameA[0]}</div><span className="av-lbl">{nameA}</span></>:
+                   <><div className="av b">{nameB[0]}</div><span className="av-lbl">{nameB}</span></>}
                   <span style={{marginLeft:'auto',fontSize:'.68rem',color:'var(--grey)'}}>
                     Due: {fmt(nextDueDate(chore))}
                   </span>
@@ -1141,11 +1143,21 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
     loadSettings()
   }, [])
 
+  const [nameError, setNameError] = useState('')
   const saveNames = async () => {
-    await supabase.from('households').update({
-      person_a_name: personAName,
-      person_b_name: personBName,
-    }).eq('id', HOUSEHOLD_ID)
+    setNameError('')
+    if (!personAName.trim() || !personBName.trim()) {
+      setNameError('Both names are required')
+      return
+    }
+    const { error } = await supabase
+      .from('households')
+      .update({ person_a_name: personAName.trim(), person_b_name: personBName.trim() })
+      .eq('id', HOUSEHOLD_ID)
+    if (error) {
+      setNameError('Save failed: ' + error.message)
+      return
+    }
     setNameSaved(true)
     onHouseholdUpdate()
     setTimeout(() => setNameSaved(false), 3000)
@@ -1240,8 +1252,10 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
           </div>
         </div>
         <button className="btn-solid" style={{marginTop:'.5rem'}} onClick={saveNames} disabled={!personAName||!personBName}>
-          {nameSaved ? '✓ Saved!' : 'Save Names'}
+          {nameSaved ? '✓ Names Saved!' : 'Save Names'}
         </button>
+        {nameSaved && <div style={{marginTop:'.5rem',fontSize:'.78rem',color:'var(--sage)',fontWeight:'700'}}>✓ Names updated to {personAName} &amp; {personBName}</div>}
+        {nameError && <div style={{marginTop:'.5rem',fontSize:'.78rem',color:'var(--terra)',fontWeight:'700'}}>⚠️ {nameError}</div>}
       </div>
 
       <div className="card" style={{marginTop:'1.2rem'}}>
@@ -1459,7 +1473,7 @@ export default function App() {
 
         <main className="main">
           {tab === 'overview' && <OverviewTab chores={chores} bills={bills} notifications={notifications} setTab={setTab} />}
-          {tab === 'chores' && <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} />}
+          {tab === 'chores' && <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} nameA={household?.person_a_name || 'Person A'} nameB={household?.person_b_name || 'Person B'} />}
           {tab === 'meals' && <MealsTab />}
           {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} onAdd={handleAddBill} onEdit={handleEditBill} onDelete={handleDeleteBill} />}
           {tab === 'ai' && <AITab chores={chores} bills={bills} notifications={notifications} />}
