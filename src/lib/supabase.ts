@@ -15,6 +15,8 @@ export type Household = {
   telegram_chat_id: string | null
   telegram_bot_token: string | null
   notify_days_before: number
+  calendar_url_a: string | null
+  calendar_url_b: string | null
   created_at: string
 }
 
