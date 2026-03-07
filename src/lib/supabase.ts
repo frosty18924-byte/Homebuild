@@ -165,6 +165,21 @@ export async function getBills() {
   return (data || []) as Bill[]
 }
 
+export async function updateBill(id: string, updates: Partial<Omit<Bill, 'id' | 'household_id' | 'is_active'>>) {
+  const { data, error } = await supabase
+    .from('bills')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteBill(id: string) {
+  await supabase.from('bills').update({ is_active: false }).eq('id', id)
+}
+
 export async function addBill(bill: Omit<Bill, 'id' | 'household_id' | 'is_active'>) {
   const { data, error } = await supabase
     .from('bills')
