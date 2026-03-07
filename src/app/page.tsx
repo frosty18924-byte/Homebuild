@@ -221,10 +221,10 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = (d: Date) => format(d, 'd MMM')
-const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-const pence = (p: number) => `£${(p/100).toFixed(0)}`
-const penceFull = (p: number) => `£${(p/100).toFixed(2)}`
+const pence = (p: number) => `£${(p / 100).toFixed(0)}`
+const penceFull = (p: number) => `£${(p / 100).toFixed(2)}`
 
 const SUGGS = [
   "What's overdue this week?",
@@ -237,10 +237,10 @@ const SUGGS = [
 
 // ─── MODAL: Add Chore ─────────────────────────────────────────────────────────
 function AddChoreModal({ onClose, onAdd, nameA, nameB }: { onClose: () => void; onAdd: (f: any) => Promise<void>; nameA?: string; nameB?: string }) {
-  const [form, setForm] = useState({ name:'', room:'', icon:'🧹', assigned:'Both' as 'A'|'B'|'Both', default_freq_days:7 })
+  const [form, setForm] = useState({ name: '', room: '', icon: '🧹', assigned: 'Both' as 'A' | 'B' | 'Both', default_freq_days: 7 })
   const [saving, setSaving] = useState(false)
-  const rooms = ['Kitchen','Bathroom','Bedroom','Living Room','Laundry','Whole house','Outside']
-  const icons = ['🧹','🧺','🛏️','🚿','🍳','🧽','🗑️','🪟','☕','🪞','👕','🔧','🌱','🧴','🪣']
+  const rooms = ['Kitchen', 'Bathroom', 'Bedroom', 'Living Room', 'Laundry', 'Whole house', 'Outside']
+  const icons = ['🧹', '🧺', '🛏️', '🚿', '🍳', '🧽', '🗑️', '🪟', '☕', '🪞', '👕', '🔧', '🌱', '🧴', '🪣']
   const submit = async () => {
     if (!form.name || !form.room) return
     setSaving(true)
@@ -253,34 +253,34 @@ function AddChoreModal({ onClose, onAdd, nameA, nameB }: { onClose: () => void; 
         <div className="modal-title">Add New Chore</div>
         <div className="form-group">
           <label className="form-label">Chore name</label>
-          <input className="form-input" placeholder="e.g. Clean microwave" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+          <input className="form-input" placeholder="e.g. Clean microwave" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Room</label>
-            <select className="form-input" value={form.room} onChange={e=>setForm({...form,room:e.target.value})}>
+            <select className="form-input" value={form.room} onChange={e => setForm({ ...form, room: e.target.value })}>
               <option value="">Select…</option>
-              {rooms.map(r=><option key={r}>{r}</option>)}
+              {rooms.map(r => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Icon</label>
-            <select className="form-input" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})}>
-              {icons.map(i=><option key={i}>{i}</option>)}
+            <select className="form-input" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}>
+              {icons.map(i => <option key={i}>{i}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Assigned to</label>
-            <select className="form-input" value={form.assigned} onChange={e=>setForm({...form,assigned:e.target.value as any})}>
-              {[['Both', `Both (${nameA||'A'} & ${nameB||'B'})`],['A', nameA||'Person A'],['B', nameB||'Person B']].map(([val,lbl])=><option key={val} value={val}>{lbl}</option>)}
+            <select className="form-input" value={form.assigned} onChange={e => setForm({ ...form, assigned: e.target.value as any })}>
+              {[['Both', `Both (${nameA || 'A'} & ${nameB || 'B'})`], ['A', nameA || 'Person A'], ['B', nameB || 'Person B']].map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Starting frequency (days)</label>
             <input type="number" className="form-input" value={form.default_freq_days} min={1} max={365}
-              onChange={e=>setForm({...form,default_freq_days:+e.target.value})} />
+              onChange={e => setForm({ ...form, default_freq_days: +e.target.value })} />
           </div>
         </div>
         <div className="modal-actions">
@@ -305,8 +305,8 @@ function EditChoreModal({ chore, onClose, onSave, nameA, nameB }: { chore: Chore
     default_freq_days: chore.default_freq_days,
   })
   const [saving, setSaving] = useState(false)
-  const rooms = ['Kitchen','Bathroom','Bedroom','Living Room','Laundry','Whole house','Outside']
-  const icons = ['🧹','🧺','🛏️','🚿','🍳','🧽','🗑️','🪟','☕','🪞','👕','🔧','🌱','🧴','🪣']
+  const rooms = ['Kitchen', 'Bathroom', 'Bedroom', 'Living Room', 'Laundry', 'Whole house', 'Outside']
+  const icons = ['🧹', '🧺', '🛏️', '🚿', '🍳', '🧽', '🗑️', '🪟', '☕', '🪞', '👕', '🔧', '🌱', '🧴', '🪣']
 
   const submit = async () => {
     if (!form.name || !form.room) return
@@ -321,28 +321,28 @@ function EditChoreModal({ chore, onClose, onSave, nameA, nameB }: { chore: Chore
         <div className="modal-title">Edit Chore</div>
         <div className="form-group">
           <label className="form-label">Chore name</label>
-          <input className="form-input" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+          <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Room</label>
-            <select className="form-input" value={form.room} onChange={e=>setForm({...form,room:e.target.value})}>
-              {rooms.map(r=><option key={r}>{r}</option>)}
+            <select className="form-input" value={form.room} onChange={e => setForm({ ...form, room: e.target.value })}>
+              {rooms.map(r => <option key={r}>{r}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Icon</label>
-            <select className="form-input" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})}>
-              {icons.map(i=><option key={i}>{i}</option>)}
+            <select className="form-input" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}>
+              {icons.map(i => <option key={i}>{i}</option>)}
             </select>
           </div>
         </div>
         <div className="form-group">
           <label className="form-label">Assigned to</label>
-          <div style={{display:'flex',gap:'.6rem',marginTop:'.2rem'}}>
-            {(['Both','A','B'] as const).map(a => (
-              <button key={a} onClick={()=>setForm({...form,assigned:a})}
-                style={{flex:1,padding:'.6rem',borderRadius:'9px',border:`2px solid ${form.assigned===a?'var(--terra)':'rgba(193,113,79,.2)'}`,background:form.assigned===a?'var(--terra)':'white',color:form.assigned===a?'white':'var(--charcoal)',cursor:'pointer',fontFamily:"'Lato',sans-serif",fontWeight:'700',fontSize:'.82rem',transition:'all .15s'}}>
+          <div style={{ display: 'flex', gap: '.6rem', marginTop: '.2rem' }}>
+            {(['Both', 'A', 'B'] as const).map(a => (
+              <button key={a} onClick={() => setForm({ ...form, assigned: a })}
+                style={{ flex: 1, padding: '.6rem', borderRadius: '9px', border: `2px solid ${form.assigned === a ? 'var(--terra)' : 'rgba(193,113,79,.2)'}`, background: form.assigned === a ? 'var(--terra)' : 'white', color: form.assigned === a ? 'white' : 'var(--charcoal)', cursor: 'pointer', fontFamily: "'Lato',sans-serif", fontWeight: '700', fontSize: '.82rem', transition: 'all .15s' }}>
                 {a === 'Both' ? '👫 Both' : a === 'A' ? `👤 ${nameA || 'Person A'}` : `👤 ${nameB || 'Person B'}`}
               </button>
             ))}
@@ -351,8 +351,8 @@ function EditChoreModal({ chore, onClose, onSave, nameA, nameB }: { chore: Chore
         <div className="form-group">
           <label className="form-label">Default frequency (days)</label>
           <input type="number" className="form-input" value={form.default_freq_days} min={1} max={365}
-            onChange={e=>setForm({...form,default_freq_days:+e.target.value})} style={{maxWidth:'160px'}} />
-          <div style={{fontSize:'.72rem',color:'var(--grey)',marginTop:'.3rem'}}>
+            onChange={e => setForm({ ...form, default_freq_days: +e.target.value })} style={{ maxWidth: '160px' }} />
+          <div style={{ fontSize: '.72rem', color: 'var(--grey)', marginTop: '.3rem' }}>
             Note: the learning engine will override this once it has enough data
           </div>
         </div>
@@ -397,7 +397,7 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete, nameA
       if (filter === 'ok') return s === 'ok'
       return true
     })
-    .sort((a,b) => daysUntilDue(a) - daysUntilDue(b))
+    .sort((a, b) => daysUntilDue(a) - daysUntilDue(b))
 
   const overdue = chores.filter(c => choreStatus(c) === 'overdue').length
   const soon = chores.filter(c => choreStatus(c) === 'due-soon').length
@@ -414,13 +414,13 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete, nameA
         <button className="btn-out" onClick={() => setShowModal(true)}>+ Add Chore</button>
       </div>
       <div className="filter-row">
-        {[['all','All'],[`overdue`,`⚠️ Overdue (${overdue})`],['soon',`⏳ Due Soon (${soon})`],['ok','✅ On Track']].map(([f,l]) => (
-          <button key={f} className={`filter-btn ${filter===f?'active':''}`} onClick={() => setFilter(f)}>{l}</button>
+        {[['all', 'All'], [`overdue`, `⚠️ Overdue (${overdue})`], ['soon', `⏳ Due Soon (${soon})`], ['ok', '✅ On Track']].map(([f, l]) => (
+          <button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{l}</button>
         ))}
       </div>
       {loading ? (
         <div className="chores-grid">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton" style={{height:'160px',borderRadius:'14px'}} />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="skeleton" style={{ height: '160px', borderRadius: '14px' }} />)}
         </div>
       ) : (
         <div className="chores-grid">
@@ -432,47 +432,47 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete, nameA
             const samples = chore.completions_count || 0
             const isMarking = marking === chore.id
             return (
-              <div key={chore.id} className={`chore-card ${s} ${isMarking?'done-flash':''}`}>
+              <div key={chore.id} className={`chore-card ${s} ${isMarking ? 'done-flash' : ''}`}>
                 <div className="chore-head">
-                  <div style={{display:'flex',alignItems:'center',gap:'.5rem'}}>
-                    <span style={{fontSize:'1.25rem'}}>{chore.icon}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>{chore.icon}</span>
                     <div>
                       <div className="chore-name">{chore.name}</div>
                       <div className="chore-meta">{chore.room}</div>
                     </div>
                   </div>
-                  <span className={`badge ${s==='overdue'?'badge-overdue':s==='due-soon'?'badge-soon':isMarking?'badge-done':'badge-ok'}`}>
-                    {isMarking ? '✓ Done!' : s==='overdue' ? `${Math.abs(d)}d late` : d===0 ? 'Today' : `${d}d`}
+                  <span className={`badge ${s === 'overdue' ? 'badge-overdue' : s === 'due-soon' ? 'badge-soon' : isMarking ? 'badge-done' : 'badge-ok'}`}>
+                    {isMarking ? '✓ Done!' : s === 'overdue' ? `${Math.abs(d)}d late` : d === 0 ? 'Today' : `${d}d`}
                   </span>
                 </div>
                 <div>
-                  <div className="learn-bar"><div className="learn-fill" style={{width:`${conf}%`}} /></div>
+                  <div className="learn-bar"><div className="learn-fill" style={{ width: `${conf}%` }} /></div>
                   <div className="learn-lbl">
-                    <span>🧠 {conf<33?'Learning…':conf<66?'Getting smarter':'Well trained'}</span>
-                    <span>{conf>=33?`~${freq}d avg (${samples} pts)`:`Default: ${freq}d`}</span>
+                    <span>🧠 {conf < 33 ? 'Learning…' : conf < 66 ? 'Getting smarter' : 'Well trained'}</span>
+                    <span>{conf >= 33 ? `~${freq}d avg (${samples} pts)` : `Default: ${freq}d`}</span>
                   </div>
                 </div>
                 <div className="assignees">
-                  {chore.assigned==='Both'?<><div className="av">{nameA[0]}</div><div className="av b">{nameB[0]}</div><span className="av-lbl">{nameA} &amp; {nameB}</span></>:
-                   chore.assigned==='A'?<><div className="av">{nameA[0]}</div><span className="av-lbl">{nameA}</span></>:
-                   <><div className="av b">{nameB[0]}</div><span className="av-lbl">{nameB}</span></>}
-                  <span style={{marginLeft:'auto',fontSize:'.68rem',color:'var(--grey)'}}>
+                  {chore.assigned === 'Both' ? <><div className="av">{nameA[0]}</div><div className="av b">{nameB[0]}</div><span className="av-lbl">{nameA} &amp; {nameB}</span></> :
+                    chore.assigned === 'A' ? <><div className="av">{nameA[0]}</div><span className="av-lbl">{nameA}</span></> :
+                      <><div className="av b">{nameB[0]}</div><span className="av-lbl">{nameB}</span></>}
+                  <span style={{ marginLeft: 'auto', fontSize: '.68rem', color: 'var(--grey)' }}>
                     Due: {fmt(nextDueDate(chore))}
                   </span>
                 </div>
                 <div className="chore-actions">
-                  <button className={`chore-btn ${isMarking?'done-st':''}`} disabled={isMarking}
+                  <button className={`chore-btn ${isMarking ? 'done-st' : ''}`} disabled={isMarking}
                     onClick={() => handleMark(chore.id)}>
                     {isMarking ? '✓ Marked!' : 'Mark Done'}
                   </button>
-                  <button className="chore-btn" style={{maxWidth:'42px',fontSize:'.85rem'}} onClick={() => setEditChore(chore)} title="Edit">✏️</button>
-                  <button className="chore-btn" style={{maxWidth:'42px',fontSize:'.85rem',borderColor:'rgba(193,113,79,.2)',color:'var(--grey)'}} onClick={() => onDelete(chore.id)} title="Delete">🗑️</button>
+                  <button className="chore-btn" style={{ maxWidth: '42px', fontSize: '.85rem' }} onClick={() => setEditChore(chore)} title="Edit">✏️</button>
+                  <button className="chore-btn" style={{ maxWidth: '42px', fontSize: '.85rem', borderColor: 'rgba(193,113,79,.2)', color: 'var(--grey)' }} onClick={() => onDelete(chore.id)} title="Delete">🗑️</button>
                 </div>
               </div>
             )
           })}
           <button className="add-card" onClick={() => setShowModal(true)}>
-            <span style={{fontSize:'1.3rem'}}>+</span> Add new chore
+            <span style={{ fontSize: '1.3rem' }}>+</span> Add new chore
           </button>
         </div>
       )}
@@ -483,10 +483,10 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete, nameA
 
 // ─── MODAL: Add Bill ──────────────────────────────────────────────────────────
 function AddBillModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any) => Promise<void> }) {
-  const [form, setForm] = useState({ name:'', icon:'💰', color:'#C1714F', provider:'', bill_type:'other', amount_pence:0, due_day_of_month:1, renewal_date:'' })
+  const [form, setForm] = useState({ name: '', icon: '💰', color: '#C1714F', provider: '', bill_type: 'other', amount_pence: 0, due_day_of_month: 1, renewal_date: '' })
   const [saving, setSaving] = useState(false)
-  const TYPES = ['mortgage','energy','broadband','car_insurance','home_insurance','council','other']
-  const ICONS = ['💰','🏡','⚡','📡','🚗','🔒','🏛️','📺','💧','🌐']
+  const TYPES = ['mortgage', 'energy', 'broadband', 'car_insurance', 'home_insurance', 'council', 'other']
+  const ICONS = ['💰', '🏡', '⚡', '📡', '🚗', '🔒', '🏛️', '📺', '💧', '🌐']
   const submit = async () => {
     if (!form.name) return
     setSaving(true)
@@ -500,44 +500,44 @@ function AddBillModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any)
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Bill name</label>
-            <input className="form-input" placeholder="e.g. Water bill" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+            <input className="form-input" placeholder="e.g. Water bill" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Icon</label>
-            <select className="form-input" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})}>
-              {ICONS.map(i=><option key={i}>{i}</option>)}
+            <select className="form-input" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}>
+              {ICONS.map(i => <option key={i}>{i}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Provider</label>
-            <input className="form-input" placeholder="e.g. Thames Water" value={form.provider} onChange={e=>setForm({...form,provider:e.target.value})} />
+            <input className="form-input" placeholder="e.g. Thames Water" value={form.provider} onChange={e => setForm({ ...form, provider: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Type</label>
-            <select className="form-input" value={form.bill_type} onChange={e=>setForm({...form,bill_type:e.target.value})}>
-              {TYPES.map(t=><option key={t} value={t}>{t.replace('_',' ')}</option>)}
+            <select className="form-input" value={form.bill_type} onChange={e => setForm({ ...form, bill_type: e.target.value })}>
+              {TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Monthly amount (£)</label>
-            <input type="number" className="form-input" placeholder="0.00" step="0.01" value={form.amount_pence||''} onChange={e=>setForm({...form,amount_pence:+e.target.value})} />
+            <input type="number" className="form-input" placeholder="0.00" step="0.01" value={form.amount_pence || ''} onChange={e => setForm({ ...form, amount_pence: +e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Payment day of month</label>
-            <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e=>setForm({...form,due_day_of_month:+e.target.value})} />
+            <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e => setForm({ ...form, due_day_of_month: +e.target.value })} />
           </div>
         </div>
         <div className="form-group">
           <label className="form-label">Renewal date (optional)</label>
-          <input type="date" className="form-input" value={form.renewal_date} onChange={e=>setForm({...form,renewal_date:e.target.value})} />
+          <input type="date" className="form-input" value={form.renewal_date} onChange={e => setForm({ ...form, renewal_date: e.target.value })} />
         </div>
         <div className="modal-actions">
           <button className="btn-out" onClick={onClose}>Cancel</button>
-          <button className="btn-solid" onClick={submit} disabled={saving}>{saving?'Adding…':'Add Bill'}</button>
+          <button className="btn-solid" onClick={submit} disabled={saving}>{saving ? 'Adding…' : 'Add Bill'}</button>
         </div>
       </div>
     </div>
@@ -556,8 +556,8 @@ function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => v
     renewal_date: bill.renewal_date ? bill.renewal_date.split('T')[0] : '',
   })
   const [saving, setSaving] = useState(false)
-  const TYPES = ['mortgage','energy','broadband','car_insurance','home_insurance','council','other']
-  const ICONS = ['💰','🏡','⚡','📡','🚗','🔒','🏛️','📺','💧','🌐']
+  const TYPES = ['mortgage', 'energy', 'broadband', 'car_insurance', 'home_insurance', 'council', 'other']
+  const ICONS = ['💰', '🏡', '⚡', '📡', '🚗', '🔒', '🏛️', '📺', '💧', '🌐']
   const submit = async () => {
     setSaving(true)
     await onSave(bill.id, {
@@ -578,44 +578,44 @@ function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => v
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Bill name</label>
-            <input className="form-input" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+            <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Icon</label>
-            <select className="form-input" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})}>
-              {ICONS.map(i=><option key={i}>{i}</option>)}
+            <select className="form-input" value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })}>
+              {ICONS.map(i => <option key={i}>{i}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Provider</label>
-            <input className="form-input" value={form.provider} onChange={e=>setForm({...form,provider:e.target.value})} />
+            <input className="form-input" value={form.provider} onChange={e => setForm({ ...form, provider: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Type</label>
-            <select className="form-input" value={form.bill_type} onChange={e=>setForm({...form,bill_type:e.target.value})}>
-              {TYPES.map(t=><option key={t} value={t}>{t.replace('_',' ')}</option>)}
+            <select className="form-input" value={form.bill_type} onChange={e => setForm({ ...form, bill_type: e.target.value })}>
+              {TYPES.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
             </select>
           </div>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label className="form-label">Monthly amount (£)</label>
-            <input type="number" className="form-input" step="0.01" value={form.amount_pounds} onChange={e=>setForm({...form,amount_pounds:e.target.value})} />
+            <input type="number" className="form-input" step="0.01" value={form.amount_pounds} onChange={e => setForm({ ...form, amount_pounds: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Payment day of month</label>
-            <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e=>setForm({...form,due_day_of_month:+e.target.value})} />
+            <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e => setForm({ ...form, due_day_of_month: +e.target.value })} />
           </div>
         </div>
         <div className="form-group">
           <label className="form-label">Renewal date</label>
-          <input type="date" className="form-input" value={form.renewal_date} onChange={e=>setForm({...form,renewal_date:e.target.value})} />
+          <input type="date" className="form-input" value={form.renewal_date} onChange={e => setForm({ ...form, renewal_date: e.target.value })} />
         </div>
         <div className="modal-actions">
           <button className="btn-out" onClick={onClose}>Cancel</button>
-          <button className="btn-solid" onClick={submit} disabled={saving}>{saving?'Saving…':'Save Changes'}</button>
+          <button className="btn-solid" onClick={submit} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
         </div>
       </div>
     </div>
@@ -625,7 +625,7 @@ function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => v
 // ─── BILLS TAB ────────────────────────────────────────────────────────────────
 function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; loading: boolean; onEdit: (id: string, f: any) => Promise<void>; onDelete: (id: string) => Promise<void>; onAdd: (f: any) => Promise<void> }) {
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [searching, setSearching] = useState<Record<string,boolean>>({})
+  const [searching, setSearching] = useState<Record<string, boolean>>({})
   const [deals, setDeals] = useState<Record<string, BillDeal[]>>({})
   const [editBill, setEditBill] = useState<Bill | null>(null)
   const [showAddBill, setShowAddBill] = useState(false)
@@ -634,11 +634,11 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
     if (searching[bill.id]) return
     if (deals[bill.id]) { setExpanded(prev => prev === bill.id ? null : bill.id); return }
     setExpanded(bill.id)
-    setSearching(s => ({...s,[bill.id]:true}))
+    setSearching(s => ({ ...s, [bill.id]: true }))
     try {
       const res = await fetch('/api/deals', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           billId: bill.id,
           billType: bill.bill_type,
@@ -647,11 +647,11 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
         }),
       })
       const data = await res.json()
-      setDeals(d => ({...d,[bill.id]: data.deals || []}))
+      setDeals(d => ({ ...d, [bill.id]: data.deals || [] }))
     } catch {
-      setDeals(d => ({...d,[bill.id]: []}))
+      setDeals(d => ({ ...d, [bill.id]: [] }))
     }
-    setSearching(s => ({...s,[bill.id]:false}))
+    setSearching(s => ({ ...s, [bill.id]: false }))
   }
 
   return (
@@ -666,8 +666,8 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
         <button className="btn-out" onClick={() => setShowAddBill(true)}>+ Add Bill</button>
       </div>
       {loading ? (
-        <div style={{display:'flex',flexDirection:'column',gap:'.8rem'}}>
-          {[1,2,3,4].map(i=><div key={i} className="skeleton" style={{height:'80px',borderRadius:'14px'}} />)}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
+          {[1, 2, 3, 4].map(i => <div key={i} className="skeleton" style={{ height: '80px', borderRadius: '14px' }} />)}
         </div>
       ) : (
         <div className="bills-list">
@@ -675,53 +675,53 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
             const renewDays = bill.renewal_date ? Math.round((new Date(bill.renewal_date).getTime() - Date.now()) / 86400000) : null
             const dueDay = bill.due_day_of_month
             const daysTilDue = dueDay ? dueDay - new Date().getDate() : null
-            const progress = renewDays ? Math.min(100, Math.max(0, ((365-renewDays)/365)*100)) : 0
+            const progress = renewDays ? Math.min(100, Math.max(0, ((365 - renewDays) / 365) * 100)) : 0
             const isUrgent = renewDays !== null && renewDays <= 60 && renewDays > 0
             const isExpanded = expanded === bill.id
             return (
               <div key={bill.id} className="bill-row">
                 <div className="bill-main">
-                  <div className="bill-ico" style={{background:`${bill.color}18`}}>{bill.icon}</div>
+                  <div className="bill-ico" style={{ background: `${bill.color}18` }}>{bill.icon}</div>
                   <div className="bill-info">
                     <div className="bill-name">{bill.name}</div>
                     <div className="bill-detail">
                       {bill.provider}
                       {renewDays !== null && (
-                        <span> · <span style={{color:renewDays<=30?'var(--terra)':renewDays<=60?'var(--gold)':'var(--grey)',fontWeight:renewDays<=60?'700':'400'}}>
+                        <span> · <span style={{ color: renewDays <= 30 ? 'var(--terra)' : renewDays <= 60 ? 'var(--gold)' : 'var(--grey)', fontWeight: renewDays <= 60 ? '700' : '400' }}>
                           Renews in {renewDays}d
                         </span></span>
                       )}
                     </div>
                     {renewDays !== null && (
                       <div className="renew-bar">
-                        <div className="renew-fill" style={{width:`${progress}%`,background:renewDays<=30?'var(--terra)':renewDays<=60?'var(--gold)':'var(--sage)'}} />
+                        <div className="renew-fill" style={{ width: `${progress}%`, background: renewDays <= 30 ? 'var(--terra)' : renewDays <= 60 ? 'var(--gold)' : 'var(--sage)' }} />
                       </div>
                     )}
                   </div>
                   <div className="bill-right">
                     <div className="bill-amt">{pence(bill.amount_pence)}/mo</div>
                     {daysTilDue !== null && (
-                      <div className="bill-due" style={{color:Math.abs(daysTilDue)<=3?'var(--terra)':'var(--grey)'}}>
+                      <div className="bill-due" style={{ color: Math.abs(daysTilDue) <= 3 ? 'var(--terra)' : 'var(--grey)' }}>
                         {daysTilDue >= 0 ? `Due in ${daysTilDue}d` : `${Math.abs(daysTilDue)}d ago`}
                       </div>
                     )}
                     {isUrgent && (
-                      <button className="btn-solid" style={{marginTop:'.5rem',fontSize:'.68rem',padding:'.3rem .7rem'}}
+                      <button className="btn-solid" style={{ marginTop: '.5rem', fontSize: '.68rem', padding: '.3rem .7rem' }}
                         onClick={() => searchDeals(bill)} disabled={searching[bill.id]}>
                         {searching[bill.id] ? '⏳ Searching…' : isExpanded ? 'Hide deals ▲' : '🔍 Find deals ▼'}
                       </button>
                     )}
-                    {!isUrgent && <span style={{fontSize:'.7rem',color:'var(--grey)',display:'block',marginTop:'.3rem'}}>✓ No action needed yet</span>}
-                    <div style={{display:'flex',gap:'.4rem',marginTop:'.5rem',justifyContent:'flex-end'}}>
-                      <button className="chore-btn" style={{maxWidth:'38px',fontSize:'.85rem',padding:'.3rem'}} onClick={() => setEditBill(bill)} title="Edit">✏️</button>
-                      <button className="chore-btn" style={{maxWidth:'38px',fontSize:'.85rem',padding:'.3rem',borderColor:'rgba(193,113,79,.2)',color:'var(--grey)'}} onClick={() => onDelete(bill.id)} title="Remove">🗑️</button>
+                    {!isUrgent && <span style={{ fontSize: '.7rem', color: 'var(--grey)', display: 'block', marginTop: '.3rem' }}>✓ No action needed yet</span>}
+                    <div style={{ display: 'flex', gap: '.4rem', marginTop: '.5rem', justifyContent: 'flex-end' }}>
+                      <button className="chore-btn" style={{ maxWidth: '38px', fontSize: '.85rem', padding: '.3rem' }} onClick={() => setEditBill(bill)} title="Edit">✏️</button>
+                      <button className="chore-btn" style={{ maxWidth: '38px', fontSize: '.85rem', padding: '.3rem', borderColor: 'rgba(193,113,79,.2)', color: 'var(--grey)' }} onClick={() => onDelete(bill.id)} title="Remove">🗑️</button>
                     </div>
                   </div>
                 </div>
 
                 {isExpanded && (
                   <div className="bill-expand">
-                    <div style={{fontSize:'.8rem',fontWeight:'700',color:'var(--charcoal)',marginBottom:'.5rem'}}>
+                    <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--charcoal)', marginBottom: '.5rem' }}>
                       💡 AI-searched deals — ranked by savings vs your current {penceFull(bill.amount_pence)}/mo:
                     </div>
                     {searching[bill.id] ? (
@@ -731,19 +731,19 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                       </div>
                     ) : deals[bill.id]?.length > 0 ? (
                       <div className="deals-grid">
-                        {deals[bill.id].map((deal,i) => (
+                        {deals[bill.id].map((deal, i) => (
                           <div key={i} className="deal-card">
                             <div className="deal-provider">{deal.provider}</div>
                             <div className="deal-price">{pence(deal.monthly_amount_pence)}/mo</div>
                             <div className="deal-saving">💚 Save {pence(deal.saving_pence)}/mo</div>
                             <div className="deal-detail">{deal.detail}</div>
-                            {deal.url && <button className="deal-cta" onClick={() => window.open(deal.url!,'_blank')}>View deal →</button>}
+                            {deal.url && <button className="deal-cta" onClick={() => window.open(deal.url!, '_blank')}>View deal →</button>}
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div style={{fontSize:'.8rem',color:'var(--grey)',padding:'.5rem 0'}}>
-                        No deals found. Try <a href="https://moneysupermarket.com" target="_blank" rel="noreferrer" style={{color:'var(--terra)'}}>MoneySupermarket</a> or <a href="https://comparethemarket.com" target="_blank" rel="noreferrer" style={{color:'var(--terra)'}}>Compare the Market</a> directly.
+                      <div style={{ fontSize: '.8rem', color: 'var(--grey)', padding: '.5rem 0' }}>
+                        No deals found. Try <a href="https://moneysupermarket.com" target="_blank" rel="noreferrer" style={{ color: 'var(--terra)' }}>MoneySupermarket</a> or <a href="https://comparethemarket.com" target="_blank" rel="noreferrer" style={{ color: 'var(--terra)' }}>Compare the Market</a> directly.
                       </div>
                     )}
                   </div>
@@ -779,17 +779,17 @@ function MealsTab() {
   const generate = async () => {
     setGenerating(true)
     await fetch('/api/meals', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ startDate: format(start,'yyyy-MM-dd') }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startDate: format(start, 'yyyy-MM-dd') }),
     })
     await load()
     setGenerating(false)
   }
 
-  const days = Array.from({length:14}, (_,i) => addDays(start,i))
-  const weekDays = days.slice(week*7, week*7+7)
-  const todayKey = format(start,'yyyy-MM-dd')
+  const days = Array.from({ length: 14 }, (_, i) => addDays(start, i))
+  const weekDays = days.slice(week * 7, week * 7 + 7)
+  const todayKey = format(start, 'yyyy-MM-dd')
 
   const mealMap: Record<string, Record<string, MealPlan>> = {}
   meals.forEach(m => {
@@ -797,8 +797,8 @@ function MealsTab() {
     mealMap[m.plan_date][m.slot] = m
   })
 
-  const tagClass = (m: MealPlan) => m.source==='hf'?'mtag-hf':m.source==='gc'?'mtag-gc':'mtag-quick'
-  const tagLabel = (m: MealPlan) => m.meal_tag==='hf'?'HelloFresh':m.meal_tag==='gc'?'Green Chef':'⚡ Quick'
+  const tagClass = (m: MealPlan) => m.source === 'hf' ? 'mtag-hf' : m.source === 'gc' ? 'mtag-gc' : 'mtag-quick'
+  const tagLabel = (m: MealPlan) => m.meal_tag === 'hf' ? 'HelloFresh' : m.meal_tag === 'gc' ? 'Green Chef' : '⚡ Quick'
 
   return (
     <div>
@@ -812,22 +812,22 @@ function MealsTab() {
         </button>
       </div>
       <div className="week-tabs">
-        <button className={`wtab ${week===0?'active':''}`} onClick={() => setWeek(0)}>
-          Week 1 · {fmt(start)} – {fmt(addDays(start,6))}
+        <button className={`wtab ${week === 0 ? 'active' : ''}`} onClick={() => setWeek(0)}>
+          Week 1 · {fmt(start)} – {fmt(addDays(start, 6))}
         </button>
-        <button className={`wtab ${week===1?'active':''}`} onClick={() => setWeek(1)}>
-          Week 2 · {fmt(addDays(start,7))} – {fmt(addDays(start,13))}
+        <button className={`wtab ${week === 1 ? 'active' : ''}`} onClick={() => setWeek(1)}>
+          Week 2 · {fmt(addDays(start, 7))} – {fmt(addDays(start, 13))}
         </button>
       </div>
       {loading ? (
         <div className="meal-grid">
-          {[1,2,3,4,5,6,7].map(i=><div key={i} className="skeleton" style={{height:'160px',borderRadius:'12px'}} />)}
+          {[1, 2, 3, 4, 5, 6, 7].map(i => <div key={i} className="skeleton" style={{ height: '160px', borderRadius: '12px' }} />)}
         </div>
       ) : meals.length === 0 ? (
-        <div style={{textAlign:'center',padding:'3rem',color:'var(--grey)'}}>
-          <div style={{fontSize:'2rem',marginBottom:'1rem'}}>🍽️</div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:'1.2rem',marginBottom:'.5rem'}}>No meals planned yet</div>
-          <div style={{fontSize:'.85rem',marginBottom:'1.5rem'}}>Click "Generate with AI" to create your 2-week plan</div>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--grey)' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🍽️</div>
+          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: '1.2rem', marginBottom: '.5rem' }}>No meals planned yet</div>
+          <div style={{ fontSize: '.85rem', marginBottom: '1.5rem' }}>Click "Generate with AI" to create your 2-week plan</div>
           <button className="btn-solid" onClick={generate} disabled={generating}>
             {generating ? 'Generating…' : '✨ Generate Meal Plan'}
           </button>
@@ -840,12 +840,12 @@ function MealsTab() {
             const lunch = mealMap[key]?.lunch
             const dinner = mealMap[key]?.dinner
             return (
-              <div key={key} className={`meal-day${isToday?' today':''}`}>
+              <div key={key} className={`meal-day${isToday ? ' today' : ''}`}>
                 <div className="meal-day-hdr">
                   <div className="meal-day-name">{DAYS[day.getDay()]}</div>
                   <div className="meal-day-date">{fmt(day)}</div>
                 </div>
-                {[['lunch','Lunch',lunch],['dinner','Dinner',dinner]].map(([slot,label,meal]) => (
+                {[['lunch', 'Lunch', lunch], ['dinner', 'Dinner', dinner]].map(([slot, label, meal]) => (
                   <div key={slot as string} className="meal-slot">
                     <div className="meal-slot-lbl">{label as string}</div>
                     {meal ? (
@@ -872,8 +872,8 @@ type Message = { role: 'ai' | 'user'; text: string; time: string }
 
 function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[]; notifications: Notification[] }) {
   const [messages, setMessages] = useState<Message[]>([{
-    role:'ai' as 'ai' | 'user',
-    text:`Hello! 👋 I'm Hearth — your household AI.\n\nI'm connected to your Supabase database so I know exactly what's going on in your home right now. I track your real chore habits, watch your bill renewals, and can search for better deals.\n\nWhat can I help you with today?`,
+    role: 'ai' as 'ai' | 'user',
+    text: `Hello! 👋 I'm Hearth — your household AI.\n\nI'm connected to your Supabase database so I know exactly what's going on in your home right now. I track your real chore habits, watch your bill renewals, and can search for better deals.\n\nWhat can I help you with today?`,
     time: nowTime(),
   }])
   const [input, setInput] = useState('')
@@ -893,29 +893,29 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
     bills: bills.map(b => ({
       name: b.name, provider: b.provider, amount: penceFull(b.amount_pence),
       renewalDate: b.renewal_date, daysUntilRenewal: b.renewal_date
-        ? Math.round((new Date(b.renewal_date).getTime()-Date.now())/86400000) : null,
+        ? Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000) : null,
     })),
-    urgentRenewals: bills.filter(b => b.renewal_date && Math.round((new Date(b.renewal_date).getTime()-Date.now())/86400000)<=60).map(b=>b.name),
-    unreadNotifications: notifications.filter(n=>!n.is_read).length,
+    urgentRenewals: bills.filter(b => b.renewal_date && Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000) <= 60).map(b => b.name),
+    unreadNotifications: notifications.filter(n => !n.is_read).length,
   }
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || loading) return
-    const userMsg = { role:'user' as 'ai' | 'user', text, time: nowTime() }
+    const userMsg = { role: 'user' as 'ai' | 'user', text, time: nowTime() }
     const newMsgs = [...messages, userMsg]
     setMessages(newMsgs)
     setInput('')
     setLoading(true)
     try {
       const res = await fetch('/api/chat', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: newMsgs, homeContext }),
       })
       const data = await res.json()
-      setMessages(p => [...p, { role:'ai', text: data.text, time: nowTime() }])
+      setMessages(p => [...p, { role: 'ai', text: data.text, time: nowTime() }])
     } catch {
-      setMessages(p => [...p, { role:'ai', text:'Sorry, connection issue. Please try again.', time: nowTime() }])
+      setMessages(p => [...p, { role: 'ai', text: 'Sorry, connection issue. Please try again.', time: nowTime() }])
     }
     setLoading(false)
   }, [messages, loading, homeContext])
@@ -938,22 +938,22 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
             </div>
           </div>
           <div className="ai-msgs" ref={msgsRef}>
-            {messages.map((m,i) => (
+            {messages.map((m, i) => (
               <div key={i} className={`msg ${m.role}`}>
                 <div className="msg-bub">{m.text}</div>
                 <div className="msg-time">{m.time}</div>
               </div>
             ))}
-            {loading && <div className="msg ai"><div className="msg-bub"><div className="typing-dots"><div className="tdot"/><div className="tdot"/><div className="tdot"/></div></div></div>}
+            {loading && <div className="msg ai"><div className="msg-bub"><div className="typing-dots"><div className="tdot" /><div className="tdot" /><div className="tdot" /></div></div></div>}
           </div>
           <div className="ai-suggs">
-            {SUGGS.map(s=><button key={s} className="ai-sugg" onClick={()=>send(s)}>{s}</button>)}
+            {SUGGS.map(s => <button key={s} className="ai-sugg" onClick={() => send(s)}>{s}</button>)}
           </div>
           <div className="ai-input-area">
             <textarea className="ai-inp" placeholder="Ask Hearth anything about your home…"
-              value={input} onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(input)}}} rows={1} />
-            <button className="ai-send" onClick={()=>send(input)} disabled={loading||!input.trim()}>➤</button>
+              value={input} onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }} rows={1} />
+            <button className="ai-send" onClick={() => send(input)} disabled={loading || !input.trim()}>➤</button>
           </div>
         </div>
 
@@ -964,14 +964,14 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
               <span onClick={() => markAllNotificationsRead()}>Mark all read</span>
             </div>
             <div className="notif-list">
-              {notifications.slice(0,12).map(n => (
-                <div key={n.id} className={`notif-item ${!n.is_read?'unread':''}`}
+              {notifications.slice(0, 12).map(n => (
+                <div key={n.id} className={`notif-item ${!n.is_read ? 'unread' : ''}`}
                   onClick={() => markNotificationRead(n.id)}>
                   <div className="notif-ico">{n.icon}</div>
                   <div className="notif-body">
                     <div className="notif-title">{n.title}</div>
                     <div className="notif-sub">{n.body}</div>
-                    <div className="notif-time">{format(new Date(n.created_at),'d MMM, HH:mm')}</div>
+                    <div className="notif-time">{format(new Date(n.created_at), 'd MMM, HH:mm')}</div>
                   </div>
                 </div>
               ))}
@@ -979,7 +979,7 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
           </div>
           <div className="learn-panel">
             <div className="learn-title">🧠 Learning Engine</div>
-            {chores.slice(0,7).map(c => (
+            {chores.slice(0, 7).map(c => (
               <div key={c.id} className="learn-item">
                 <div>{c.icon} {c.name}</div>
                 <div className="learn-item-r">
@@ -997,19 +997,19 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
 function OverviewTab({ chores, bills, notifications, setTab }: any) {
-  const overdue = chores.filter((c:any)=>choreStatus(c)==='overdue').length
-  const soon = chores.filter((c:any)=>choreStatus(c)==='due-soon').length
-  const urgentBills = bills.filter((b:any)=>b.renewal_date&&Math.round((new Date(b.renewal_date).getTime()-Date.now())/86400000)<=60).length
-  const unread = notifications.filter((n:any)=>!n.is_read).length
+  const overdue = chores.filter((c: any) => choreStatus(c) === 'overdue').length
+  const soon = chores.filter((c: any) => choreStatus(c) === 'due-soon').length
+  const urgentBills = bills.filter((b: any) => b.renewal_date && Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000) <= 60).length
+  const unread = notifications.filter((n: any) => !n.is_read).length
   const h = new Date().getHours()
-  const greeting = h<12?'Good morning':h<18?'Good afternoon':'Good evening'
-  const topChores = [...chores].sort((a:any,b:any)=>daysUntilDue(a)-daysUntilDue(b)).slice(0,5)
+  const greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+  const topChores = [...chores].sort((a: any, b: any) => daysUntilDue(a) - daysUntilDue(b)).slice(0, 5)
 
   return (
     <div>
       <div className="greeting">
         <div className="gt">{greeting}, you two ☕</div>
-        <div className="gs">{new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+        <div className="gs">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
         <div className="gstats">
           <div><div className="gn">{overdue}</div><div className="gl">Overdue chores</div></div>
           <div><div className="gn">{soon}</div><div className="gl">Due this week</div></div>
@@ -1020,82 +1020,82 @@ function OverviewTab({ chores, bills, notifications, setTab }: any) {
 
       {unread > 0 && (
         <div className="alerts-banner">
-          {notifications.filter((n:any)=>!n.is_read).slice(0,3).map((n:any)=>(
+          {notifications.filter((n: any) => !n.is_read).slice(0, 3).map((n: any) => (
             <div key={n.id} className="alert-item">
-              <span style={{fontSize:'1.1rem'}}>{n.icon}</span>
-              <div className="alert-text"><strong>{n.title}</strong> · <span style={{color:'var(--grey)'}}>{n.body}</span></div>
-              <button className="alert-action" onClick={()=>markNotificationRead(n.id)}>Dismiss</button>
+              <span style={{ fontSize: '1.1rem' }}>{n.icon}</span>
+              <div className="alert-text"><strong>{n.title}</strong> · <span style={{ color: 'var(--grey)' }}>{n.body}</span></div>
+              <button className="alert-action" onClick={() => markNotificationRead(n.id)}>Dismiss</button>
             </div>
           ))}
         </div>
       )}
 
       <div className="ov-grid">
-        <div style={{display:'flex',flexDirection:'column',gap:'1.2rem'}}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div className="card">
             <div className="card-title"><span>🧹</span> Priority Chores</div>
-            {topChores.map((c:any) => {
+            {topChores.map((c: any) => {
               const s = choreStatus(c); const d = daysUntilDue(c)
               return (
-                <div key={c.id} style={{display:'flex',alignItems:'center',gap:'.8rem',padding:'.65rem 0',borderBottom:'1px solid rgba(193,113,79,.07)'}}>
-                  <span style={{fontSize:'1.1rem'}}>{c.icon}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:'.87rem',fontFamily:"'Playfair Display',serif"}}>{c.name}</div>
-                    <div style={{fontSize:'.7rem',color:'var(--grey)'}}>{c.room} · every ~{effectiveFreq(c)}d</div>
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '.8rem', padding: '.65rem 0', borderBottom: '1px solid rgba(193,113,79,.07)' }}>
+                  <span style={{ fontSize: '1.1rem' }}>{c.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '.87rem', fontFamily: "'Playfair Display',serif" }}>{c.name}</div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--grey)' }}>{c.room} · every ~{effectiveFreq(c)}d</div>
                   </div>
-                  <span className={`badge ${s==='overdue'?'badge-overdue':s==='due-soon'?'badge-soon':'badge-ok'}`}>
-                    {d<0?`${Math.abs(d)}d late`:d===0?'Today':`${d}d`}
+                  <span className={`badge ${s === 'overdue' ? 'badge-overdue' : s === 'due-soon' ? 'badge-soon' : 'badge-ok'}`}>
+                    {d < 0 ? `${Math.abs(d)}d late` : d === 0 ? 'Today' : `${d}d`}
                   </span>
                 </div>
               )
             })}
-            <button className="btn-out" style={{marginTop:'1rem',width:'100%'}} onClick={()=>setTab('chores')}>All chores →</button>
+            <button className="btn-out" style={{ marginTop: '1rem', width: '100%' }} onClick={() => setTab('chores')}>All chores →</button>
           </div>
           <div className="card">
             <div className="card-title"><span>💰</span> Renewals Radar</div>
-            {bills.filter((b:any)=>b.renewal_date).sort((a:any,b:any)=>new Date(a.renewal_date).getTime()-new Date(b.renewal_date).getTime()).slice(0,5).map((b:any)=>{
-              const d = Math.round((new Date(b.renewal_date).getTime()-Date.now())/86400000)
+            {bills.filter((b: any) => b.renewal_date).sort((a: any, b: any) => new Date(a.renewal_date).getTime() - new Date(b.renewal_date).getTime()).slice(0, 5).map((b: any) => {
+              const d = Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000)
               return (
-                <div key={b.id} style={{display:'flex',alignItems:'center',gap:'.8rem',padding:'.65rem 0',borderBottom:'1px solid rgba(193,113,79,.07)'}}>
-                  <span style={{fontSize:'1.1rem'}}>{b.icon}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:'.87rem',fontFamily:"'Playfair Display',serif"}}>{b.name}</div>
-                    <div style={{fontSize:'.7rem',color:'var(--grey)'}}>{b.provider}</div>
+                <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '.8rem', padding: '.65rem 0', borderBottom: '1px solid rgba(193,113,79,.07)' }}>
+                  <span style={{ fontSize: '1.1rem' }}>{b.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '.87rem', fontFamily: "'Playfair Display',serif" }}>{b.name}</div>
+                    <div style={{ fontSize: '.7rem', color: 'var(--grey)' }}>{b.provider}</div>
                   </div>
-                  <div style={{textAlign:'right'}}>
-                    <span style={{fontSize:'.8rem',fontWeight:'700',color:d<=30?'var(--terra)':d<=60?'var(--gold)':'var(--grey)'}}>{d}d</span>
-                    {d<=60&&<div style={{fontSize:'.65rem',color:'var(--terra)'}}>Deals available</div>}
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '.8rem', fontWeight: '700', color: d <= 30 ? 'var(--terra)' : d <= 60 ? 'var(--gold)' : 'var(--grey)' }}>{d}d</span>
+                    {d <= 60 && <div style={{ fontSize: '.65rem', color: 'var(--terra)' }}>Deals available</div>}
                   </div>
                 </div>
               )
             })}
-            <button className="btn-out" style={{marginTop:'1rem',width:'100%'}} onClick={()=>setTab('bills')}>View all bills →</button>
+            <button className="btn-out" style={{ marginTop: '1rem', width: '100%' }} onClick={() => setTab('bills')}>View all bills →</button>
           </div>
         </div>
-        <div style={{display:'flex',flexDirection:'column',gap:'1.2rem'}}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div className="card">
             <div className="card-title"><span>🔔</span> Recent Alerts</div>
-            {notifications.slice(0,5).map((n:any)=>(
-              <div key={n.id} style={{display:'flex',gap:'.6rem',padding:'.5rem 0',borderBottom:'1px solid rgba(193,113,79,.07)'}}>
-                <span style={{fontSize:'.95rem'}}>{n.icon}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:'.8rem',fontWeight:'700',color:'var(--charcoal)'}}>{n.title}</div>
-                  <div style={{fontSize:'.7rem',color:'var(--grey)',marginTop:'.1rem'}}>{n.body}</div>
+            {notifications.slice(0, 5).map((n: any) => (
+              <div key={n.id} style={{ display: 'flex', gap: '.6rem', padding: '.5rem 0', borderBottom: '1px solid rgba(193,113,79,.07)' }}>
+                <span style={{ fontSize: '.95rem' }}>{n.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--charcoal)' }}>{n.title}</div>
+                  <div style={{ fontSize: '.7rem', color: 'var(--grey)', marginTop: '.1rem' }}>{n.body}</div>
                 </div>
-                {!n.is_read&&<div style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--terra)',marginTop:'4px',flexShrink:0}} />}
+                {!n.is_read && <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--terra)', marginTop: '4px', flexShrink: 0 }} />}
               </div>
             ))}
-            <button className="btn-out" style={{marginTop:'1rem',width:'100%'}} onClick={()=>setTab('ai')}>Open Hearth AI →</button>
+            <button className="btn-out" style={{ marginTop: '1rem', width: '100%' }} onClick={() => setTab('ai')}>Open Hearth AI →</button>
           </div>
           <div className="card">
             <div className="card-title"><span>🧠</span> Learning Status</div>
-            {chores.slice(0,5).map((c:any)=>(
-              <div key={c.id} style={{marginBottom:'.6rem'}}>
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:'.73rem',marginBottom:'.2rem'}}>
+            {chores.slice(0, 5).map((c: any) => (
+              <div key={c.id} style={{ marginBottom: '.6rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.73rem', marginBottom: '.2rem' }}>
                   <span>{c.icon} {c.name}</span>
-                  <span style={{color:c.confidence_pct>66?'var(--sage)':c.confidence_pct>33?'var(--gold)':'var(--grey)',fontWeight:'700'}}>{c.confidence_pct}%</span>
+                  <span style={{ color: c.confidence_pct > 66 ? 'var(--sage)' : c.confidence_pct > 33 ? 'var(--gold)' : 'var(--grey)', fontWeight: '700' }}>{c.confidence_pct}%</span>
                 </div>
-                <div className="learn-bar"><div className="learn-fill" style={{width:`${c.confidence_pct}%`}} /></div>
+                <div className="learn-bar"><div className="learn-fill" style={{ width: `${c.confidence_pct}%` }} /></div>
               </div>
             ))}
           </div>
@@ -1107,7 +1107,7 @@ function OverviewTab({ chores, bills, notifications, setTab }: any) {
 
 // ─── SETTINGS / NOTIFICATIONS TAB ─────────────────────────────────────────────
 function SettingsTab({ household, onHouseholdUpdate }: { household: Household | null; onHouseholdUpdate: () => void }) {
-  const [personAName, setPersonAName] = useState(''  )
+  const [personAName, setPersonAName] = useState('')
   const [personBName, setPersonBName] = useState('')
   const [botToken, setBotToken] = useState('')
   const [chatId, setChatId] = useState('')
@@ -1150,16 +1150,17 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
       setNameError('Both names are required')
       return
     }
-    // Fetch the household ID directly from Supabase
-    const { data: current } = await supabase.from('households').select('id').single()
-    if (!current) {
+    // Use HOUSEHOLD_ID directly — this is the same ID that getHousehold reads,
+    // so we always update the correct row and the names reflect immediately.
+    const targetId = HOUSEHOLD_ID || (await supabase.from('households').select('id').single()).data?.id
+    if (!targetId) {
       setNameError('Error: Could not find household record in database')
       return
     }
     const { error } = await supabase
       .from('households')
       .update({ person_a_name: personAName.trim(), person_b_name: personBName.trim() })
-      .eq('id', current.id)
+      .eq('id', targetId)
     if (error) {
       setNameError('Save failed: ' + error.message)
       return
@@ -1179,7 +1180,8 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
     await fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ botToken, chatId, message: `🏡 <b>Hearth Test</b>
+      body: JSON.stringify({
+        botToken, chatId, message: `🏡 <b>Hearth Test</b>
 
 Your Telegram notifications are working! You'll receive daily updates here at 8am every morning.` }),
     })
@@ -1213,7 +1215,7 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
       setCalSaved(true)
       onHouseholdUpdate()
       setTimeout(() => setCalSaved(false), 4000)
-    } catch(err: any) {
+    } catch (err: any) {
       setCalError(err.message || 'Something went wrong — check your iCal URL')
     }
     setCalTesting(false)
@@ -1230,27 +1232,27 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
 
       <div className="setup-card">
         <div className="setup-title">📱 Telegram Push Notifications {telegramSaved ? '— ✓ Connected' : ''}</div>
-        <p style={{fontSize:'.82rem',color:'rgba(245,240,232,.75)',marginTop:'.4rem'}}>
+        <p style={{ fontSize: '.82rem', color: 'rgba(245,240,232,.75)', marginTop: '.4rem' }}>
           Hearth sends daily summaries + urgent alerts (overdue chores, bills renewing soon) straight to your Telegram.
         </p>
         <div className="setup-steps">
-          <div className="setup-step"><div className="step-num">1</div>Open Telegram → search <strong style={{color:'var(--gold-l)'}}>@BotFather</strong> → send /newbot → copy the token</div>
-          <div className="setup-step"><div className="step-num">2</div>Start a chat with your new bot → then visit <strong style={{color:'var(--gold-l)'}}>api.telegram.org/bot[TOKEN]/getUpdates</strong> to find your chat_id</div>
+          <div className="setup-step"><div className="step-num">1</div>Open Telegram → search <strong style={{ color: 'var(--gold-l)' }}>@BotFather</strong> → send /newbot → copy the token</div>
+          <div className="setup-step"><div className="step-num">2</div>Start a chat with your new bot → then visit <strong style={{ color: 'var(--gold-l)' }}>api.telegram.org/bot[TOKEN]/getUpdates</strong> to find your chat_id</div>
           <div className="setup-step"><div className="step-num">3</div>Paste both below and click Save & Test</div>
         </div>
         <div className="setup-input-row">
-          <input className="setup-inp" placeholder="Bot token (from BotFather)…" value={botToken} onChange={e=>setBotToken(e.target.value)} />
-          <input className="setup-inp" placeholder="Chat ID (from getUpdates)…" value={chatId} onChange={e=>setChatId(e.target.value)} />
-          <button className="btn-solid" style={{padding:'.6rem 1.2rem',fontSize:'.78rem',whiteSpace:'nowrap'}}
-            onClick={saveTelegram} disabled={!botToken||!chatId||testing}>
-            {testing?'Sending test…':telegramSaved?'✓ Saved & Tested':'Save & Test'}
+          <input className="setup-inp" placeholder="Bot token (from BotFather)…" value={botToken} onChange={e => setBotToken(e.target.value)} />
+          <input className="setup-inp" placeholder="Chat ID (from getUpdates)…" value={chatId} onChange={e => setChatId(e.target.value)} />
+          <button className="btn-solid" style={{ padding: '.6rem 1.2rem', fontSize: '.78rem', whiteSpace: 'nowrap' }}
+            onClick={saveTelegram} disabled={!botToken || !chatId || testing}>
+            {testing ? 'Sending test…' : telegramSaved ? '✓ Saved & Tested' : 'Save & Test'}
           </button>
         </div>
       </div>
 
       <div className="card">
         <div className="card-title">🏡 Household Details</div>
-        <div className="form-row" style={{marginBottom:'1rem'}}>
+        <div className="form-row" style={{ marginBottom: '1rem' }}>
           <div className="form-group">
             <label className="form-label">Person A name</label>
             <input className="form-input" value={personAName} onChange={e => setPersonAName(e.target.value)} placeholder="e.g. Matt" />
@@ -1260,82 +1262,82 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
             <input className="form-input" value={personBName} onChange={e => setPersonBName(e.target.value)} placeholder="e.g. Maisie" />
           </div>
         </div>
-        <button className="btn-solid" style={{marginTop:'.5rem'}} onClick={saveNames} disabled={!personAName||!personBName}>
+        <button className="btn-solid" style={{ marginTop: '.5rem' }} onClick={saveNames} disabled={!personAName || !personBName}>
           {nameSaved ? '✓ Names Saved!' : 'Save Names'}
         </button>
-        {nameSaved && <div style={{marginTop:'.5rem',fontSize:'.78rem',color:'var(--sage)',fontWeight:'700'}}>✓ Names updated to {personAName} &amp; {personBName}</div>}
-        {nameError && <div style={{marginTop:'.5rem',fontSize:'.78rem',color:'var(--terra)',fontWeight:'700'}}>⚠️ {nameError}</div>}
+        {nameSaved && <div style={{ marginTop: '.5rem', fontSize: '.78rem', color: 'var(--sage)', fontWeight: '700' }}>✓ Names updated to {personAName} &amp; {personBName}</div>}
+        {nameError && <div style={{ marginTop: '.5rem', fontSize: '.78rem', color: 'var(--terra)', fontWeight: '700' }}>⚠️ {nameError}</div>}
       </div>
 
-      <div className="card" style={{marginTop:'1.2rem'}}>
+      <div className="card" style={{ marginTop: '1.2rem' }}>
         <div className="card-title">📅 Google Calendar — Away Day Detection</div>
-        <p style={{fontSize:'.85rem',color:'var(--grey)',lineHeight:'1.6',marginBottom:'1rem'}}>
+        <p style={{ fontSize: '.85rem', color: 'var(--grey)', lineHeight: '1.6', marginBottom: '1rem' }}>
           Link your Google Calendar so Hearth knows when you're away. Chores due on busy days automatically move to the day before.
         </p>
-        <div className="setup-steps" style={{marginBottom:'1rem'}}>
-          <div className="setup-step" style={{color:'var(--charcoal)'}}>
-            <div className="step-num" style={{background:'rgba(193,113,79,.15)',color:'var(--terra)'}}>1</div>
+        <div className="setup-steps" style={{ marginBottom: '1rem' }}>
+          <div className="setup-step" style={{ color: 'var(--charcoal)' }}>
+            <div className="step-num" style={{ background: 'rgba(193,113,79,.15)', color: 'var(--terra)' }}>1</div>
             Open <strong>Google Calendar</strong> on desktop → click the three dots next to your calendar name → <strong>Settings and sharing</strong>
           </div>
-          <div className="setup-step" style={{color:'var(--charcoal)'}}>
-            <div className="step-num" style={{background:'rgba(193,113,79,.15)',color:'var(--terra)'}}>2</div>
+          <div className="setup-step" style={{ color: 'var(--charcoal)' }}>
+            <div className="step-num" style={{ background: 'rgba(193,113,79,.15)', color: 'var(--terra)' }}>2</div>
             Scroll to <strong>Integrate calendar</strong> → copy the <strong>Secret address in iCal format</strong> link
           </div>
-          <div className="setup-step" style={{color:'var(--charcoal)'}}>
-            <div className="step-num" style={{background:'rgba(193,113,79,.15)',color:'var(--terra)'}}>3</div>
+          <div className="setup-step" style={{ color: 'var(--charcoal)' }}>
+            <div className="step-num" style={{ background: 'rgba(193,113,79,.15)', color: 'var(--terra)' }}>3</div>
             Paste it below. Tag any away events with words like <strong>away, holiday, out, travel</strong> so Hearth knows to move chores
           </div>
         </div>
-        <div style={{display:'flex',flexDirection:'column',gap:'.6rem',marginBottom:'.8rem'}}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginBottom: '.8rem' }}>
           <div>
             <label className="form-label">Person A — iCal URL</label>
-            <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-a..." value={calUrl1} onChange={e=>setCalUrl1(e.target.value)} />
+            <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-a..." value={calUrl1} onChange={e => setCalUrl1(e.target.value)} />
           </div>
           <div>
             <label className="form-label">Person B — iCal URL</label>
-            <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-b..." value={calUrl2} onChange={e=>setCalUrl2(e.target.value)} />
+            <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-b..." value={calUrl2} onChange={e => setCalUrl2(e.target.value)} />
           </div>
-          <button className="btn-solid" onClick={saveAndTestCalendar} disabled={(!calUrl1&&!calUrl2)||calTesting} style={{alignSelf:'flex-start',padding:'.5rem 1.2rem'}}>
-            {calTesting?'Connecting…':calSaved?'✓ Connected — Refresh':'Connect Calendars'}
+          <button className="btn-solid" onClick={saveAndTestCalendar} disabled={(!calUrl1 && !calUrl2) || calTesting} style={{ alignSelf: 'flex-start', padding: '.5rem 1.2rem' }}>
+            {calTesting ? 'Connecting…' : calSaved ? '✓ Connected — Refresh' : 'Connect Calendars'}
           </button>
         </div>
         {busyDays.length > 0 && (
-          <div style={{marginTop:'1rem',padding:'.8rem 1rem',background:'rgba(122,158,126,.1)',borderRadius:'10px',border:'1px solid rgba(122,158,126,.2)'}}>
-            <div style={{fontSize:'.78rem',fontWeight:'700',color:'var(--sage)',marginBottom:'.4rem'}}>📅 Away days detected in next 30 days:</div>
-            <div style={{display:'flex',flexWrap:'wrap',gap:'.4rem'}}>
-              {busyDays.map(d=>(
-                <span key={d} style={{fontSize:'.72rem',padding:'.2rem .6rem',background:'white',borderRadius:'20px',border:'1px solid rgba(122,158,126,.3)',color:'var(--charcoal)'}}>
-                  {new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}
+          <div style={{ marginTop: '1rem', padding: '.8rem 1rem', background: 'rgba(122,158,126,.1)', borderRadius: '10px', border: '1px solid rgba(122,158,126,.2)' }}>
+            <div style={{ fontSize: '.78rem', fontWeight: '700', color: 'var(--sage)', marginBottom: '.4rem' }}>📅 Away days detected in next 30 days:</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
+              {busyDays.map(d => (
+                <span key={d} style={{ fontSize: '.72rem', padding: '.2rem .6rem', background: 'white', borderRadius: '20px', border: '1px solid rgba(122,158,126,.3)', color: 'var(--charcoal)' }}>
+                  {new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                 </span>
               ))}
             </div>
-            <div style={{fontSize:'.72rem',color:'var(--grey)',marginTop:'.5rem'}}>Chores due on these days will be moved to the day before automatically.</div>
+            <div style={{ fontSize: '.72rem', color: 'var(--grey)', marginTop: '.5rem' }}>Chores due on these days will be moved to the day before automatically.</div>
           </div>
         )}
         {calSaved && busyDays.length === 0 && (
-          <div style={{marginTop:'.8rem',padding:'.7rem 1rem',background:'rgba(122,158,126,.1)',borderRadius:'10px',border:'1px solid rgba(122,158,126,.2)',fontSize:'.78rem',color:'var(--sage)',fontWeight:'700'}}>
+          <div style={{ marginTop: '.8rem', padding: '.7rem 1rem', background: 'rgba(122,158,126,.1)', borderRadius: '10px', border: '1px solid rgba(122,158,126,.2)', fontSize: '.78rem', color: 'var(--sage)', fontWeight: '700' }}>
             ✓ Calendar URLs saved successfully. No away days found in the next 30 days — add events with a location lasting 6+ hours and they'll appear here.
           </div>
         )}
         {calError && (
-          <div style={{marginTop:'.8rem',padding:'.7rem 1rem',background:'rgba(193,113,79,.08)',borderRadius:'10px',border:'1px solid rgba(193,113,79,.2)',fontSize:'.78rem',color:'var(--terra)'}}>
+          <div style={{ marginTop: '.8rem', padding: '.7rem 1rem', background: 'rgba(193,113,79,.08)', borderRadius: '10px', border: '1px solid rgba(193,113,79,.2)', fontSize: '.78rem', color: 'var(--terra)' }}>
             ⚠️ {calError}
           </div>
         )}
         {!loaded && (
-          <div style={{marginTop:'.5rem',fontSize:'.75rem',color:'var(--grey)'}}>Loading saved settings…</div>
+          <div style={{ marginTop: '.5rem', fontSize: '.75rem', color: 'var(--grey)' }}>Loading saved settings…</div>
         )}
       </div>
 
-      <div className="card" style={{marginTop:'1.2rem'}}>
+      <div className="card" style={{ marginTop: '1.2rem' }}>
         <div className="card-title">📡 Cross-Device Access</div>
-        <p style={{fontSize:'.85rem',color:'var(--grey)',lineHeight:'1.6',marginBottom:'1rem'}}>
+        <p style={{ fontSize: '.85rem', color: 'var(--grey)', lineHeight: '1.6', marginBottom: '1rem' }}>
           Both of you access Hearth on any device. Add it to your phone home screen for a native app feel.
         </p>
-        <div style={{background:'var(--linen)',borderRadius:'10px',padding:'1rem',fontFamily:'monospace',fontSize:'.82rem',color:'var(--charcoal)'}}>
+        <div style={{ background: 'var(--linen)', borderRadius: '10px', padding: '1rem', fontFamily: 'monospace', fontSize: '.82rem', color: 'var(--charcoal)' }}>
           {process.env.NEXT_PUBLIC_APP_URL || 'https://your-hearth-app.vercel.app'}
         </div>
-        <div style={{marginTop:'.8rem',fontSize:'.78rem',color:'var(--grey)'}}>
+        <div style={{ marginTop: '.8rem', fontSize: '.78rem', color: 'var(--grey)' }}>
           💡 Safari/Chrome → Share → Add to Home Screen
         </div>
       </div>
@@ -1352,7 +1354,7 @@ export default function App() {
   const [household, setHousehold] = useState<Household | null>(null)
   const [nameA, setNameA] = useState('Person A')
   const [nameB, setNameB] = useState('Person B')
-  const [loading, setLoading] = useState({ chores:true, bills:true, notifs:true })
+  const [loading, setLoading] = useState({ chores: true, bills: true, notifs: true })
 
   const loadAll = async () => {
     const [c, b, n, h] = await Promise.all([
@@ -1366,7 +1368,7 @@ export default function App() {
       setNameA(h.person_a_name || 'Person A')
       setNameB(h.person_b_name || 'Person B')
     }
-    setLoading({ chores:false, bills:false, notifs:false })
+    setLoading({ chores: false, bills: false, notifs: false })
   }
 
   useEffect(() => {
@@ -1378,10 +1380,10 @@ export default function App() {
     // Realtime subscription - chore completions trigger re-fetch
     const channel = supabase
       .channel('hearth-realtime')
-      .on('postgres_changes', { event:'*', schema:'public', table:'chore_completions' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chore_completions' }, () => {
         getChores().then(setChores)
       })
-      .on('postgres_changes', { event:'*', schema:'public', table:'notifications' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
         getNotifications().then(setNotifications)
       })
       .subscribe()
@@ -1436,22 +1438,22 @@ export default function App() {
   }
 
   const overdue = chores.filter(c => choreStatus(c) === 'overdue').length
-  const urgentBills = bills.filter(b => b.renewal_date && Math.round((new Date(b.renewal_date).getTime()-Date.now())/86400000)<=60).length
+  const urgentBills = bills.filter(b => b.renewal_date && Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000) <= 60).length
   const unread = notifications.filter(n => !n.is_read).length
   const today = new Date()
 
   const TABS = [
-    { id:'overview', label:'Overview', icon:'🏡' },
-    { id:'chores', label:'Chores', icon:'🧹', count: overdue },
-    { id:'meals', label:'Meals', icon:'🍽️' },
-    { id:'bills', label:'Bills & Deals', icon:'💰', count: urgentBills },
-    { id:'ai', label:'Hearth AI', icon:'✨' },
-    { id:'settings', label:'Settings', icon:'⚙️', count: unread },
+    { id: 'overview', label: 'Overview', icon: '🏡' },
+    { id: 'chores', label: 'Chores', icon: '🧹', count: overdue },
+    { id: 'meals', label: 'Meals', icon: '🍽️' },
+    { id: 'bills', label: 'Bills & Deals', icon: '💰', count: urgentBills },
+    { id: 'ai', label: 'Hearth AI', icon: '✨' },
+    { id: 'settings', label: 'Settings', icon: '⚙️', count: unread },
   ]
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{__html: STYLE}} />
+      <style dangerouslySetInnerHTML={{ __html: STYLE }} />
       <div className="app">
         <header className="hdr">
           <div className="hdr-brand">
@@ -1471,15 +1473,15 @@ export default function App() {
               {household?.telegram_bot_token ? '📱 Telegram ✓' : '📱 Setup Alerts'}
             </button>
             <div className="hdr-date">
-              <strong>{today.toLocaleDateString('en-GB',{weekday:'long'})}</strong>
-              {today.toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
+              <strong>{today.toLocaleDateString('en-GB', { weekday: 'long' })}</strong>
+              {today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
             </div>
           </div>
         </header>
 
         <nav className="nav">
           {TABS.map(t => (
-            <button key={t.id} className={`nav-btn ${tab===t.id?'active':''}`} onClick={() => setTab(t.id)}>
+            <button key={t.id} className={`nav-btn ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
               {t.icon} {t.label}
               {(t.count ?? 0) > 0 && <span className="nav-count">{t.count}</span>}
             </button>
@@ -1492,7 +1494,7 @@ export default function App() {
           {tab === 'meals' && <MealsTab />}
           {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} onAdd={handleAddBill} onEdit={handleEditBill} onDelete={handleDeleteBill} />}
           {tab === 'ai' && <AITab chores={chores} bills={bills} notifications={notifications} />}
-          {tab === 'settings' && <SettingsTab household={household} onHouseholdUpdate={() => getHousehold().then(h => { if(h) { setHousehold(h); setNameA(h.person_a_name||'Person A'); setNameB(h.person_b_name||'Person B') } })} />}
+          {tab === 'settings' && <SettingsTab household={household} onHouseholdUpdate={() => getHousehold().then(h => { if (h) { setHousehold(h); setNameA(h.person_a_name || 'Person A'); setNameB(h.person_b_name || 'Person B') } })} />}
         </main>
       </div>
     </>
