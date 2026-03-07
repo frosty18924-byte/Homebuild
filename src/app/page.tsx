@@ -1150,13 +1150,7 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
       setNameError('Both names are required')
       return
     }
-    // Debug: show exactly what we're trying to save and to which ID
-    const debugId = process.env.NEXT_PUBLIC_HOUSEHOLD_ID
-    if (!debugId) {
-      setNameError('Error: NEXT_PUBLIC_HOUSEHOLD_ID is not set in Vercel environment variables')
-      return
-    }
-    // Use the ID directly from the loaded data rather than env var
+    // Fetch the household ID directly from Supabase
     const { data: current } = await supabase.from('households').select('id').single()
     if (!current) {
       setNameError('Error: Could not find household record in database')
