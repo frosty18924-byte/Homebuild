@@ -1105,30 +1105,41 @@ function OverviewTab({ chores, bills, notifications, setTab }: any) {
 
 // ─── SETTINGS / NOTIFICATIONS TAB ─────────────────────────────────────────────
 function SettingsTab({ household, onHouseholdUpdate }: { household: Household | null; onHouseholdUpdate: () => void }) {
-  const [personAName, setPersonAName] = useState(household?.person_a_name || 'Person A')
-  const [personBName, setPersonBName] = useState(household?.person_b_name || 'Person B')
-  const [botToken, setBotToken] = useState(household?.telegram_bot_token || '')
-  const [chatId, setChatId] = useState(household?.telegram_chat_id || '')
-  const [calUrl1, setCalUrl1] = useState(household?.calendar_url_a || '')
-  const [calUrl2, setCalUrl2] = useState(household?.calendar_url_b || '')
+  const [personAName, setPersonAName] = useState(''  )
+  const [personBName, setPersonBName] = useState('')
+  const [botToken, setBotToken] = useState('')
+  const [chatId, setChatId] = useState('')
+  const [calUrl1, setCalUrl1] = useState('')
+  const [calUrl2, setCalUrl2] = useState('')
   const [testing, setTesting] = useState(false)
   const [telegramSaved, setTelegramSaved] = useState(false)
   const [nameSaved, setNameSaved] = useState(false)
   const [calSaved, setCalSaved] = useState(false)
+  const [calError, setCalError] = useState('')
   const [busyDays, setBusyDays] = useState<string[]>([])
   const [calTesting, setCalTesting] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
-  // Load saved values when household data arrives
+  // Load directly from Supabase so we always get fresh data including calendar URLs
   useEffect(() => {
-    if (household) {
-      setPersonAName(household.person_a_name || 'Person A')
-      setPersonBName(household.person_b_name || 'Person B')
-      setBotToken(household.telegram_bot_token || '')
-      setChatId(household.telegram_chat_id || '')
-      setCalUrl1(household.calendar_url_a || '')
-      setCalUrl2(household.calendar_url_b || '')
+    async function loadSettings() {
+      const { data } = await supabase
+        .from('households')
+        .select('*')
+        .eq('id', HOUSEHOLD_ID)
+        .single()
+      if (data) {
+        setPersonAName(data.person_a_name || 'Person A')
+        setPersonBName(data.person_b_name || 'Person B')
+        setBotToken(data.telegram_bot_token || '')
+        setChatId(data.telegram_chat_id || '')
+        setCalUrl1(data.calendar_url_a || '')
+        setCalUrl2(data.calendar_url_b || '')
+        setLoaded(true)
+      }
     }
-  }, [household])
+    loadSettings()
+  }, [])
 
   const saveNames = async () => {
     await supabase.from('households').update({
@@ -1161,20 +1172,29 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
 
   const saveAndTestCalendar = async () => {
     setCalTesting(true)
+    setCalError('')
     try {
-      await supabase.from('households').update({
+      // Save to Supabase first
+      const { error: dbError } = await supabase.from('households').update({
         calendar_url_a: calUrl1 || null,
         calendar_url_b: calUrl2 || null,
       }).eq('id', HOUSEHOLD_ID)
+      if (dbError) throw new Error('Database save failed: ' + dbError.message)
+
+      // Then fetch busy days
       const params = new URLSearchParams()
       if (calUrl1) params.set('url1', calUrl1)
       if (calUrl2) params.set('url2', calUrl2)
       const res = await fetch(`/api/calendar?${params.toString()}`)
       const data = await res.json()
+      if (data.error) throw new Error('Calendar fetch failed: ' + data.error)
       setBusyDays(data.busyDays || [])
       setCalSaved(true)
       onHouseholdUpdate()
-    } catch { setBusyDays([]) }
+      setTimeout(() => setCalSaved(false), 4000)
+    } catch(err: any) {
+      setCalError(err.message || 'Something went wrong — check your iCal URL')
+    }
     setCalTesting(false)
   }
 
@@ -1274,7 +1294,17 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
           </div>
         )}
         {calSaved && busyDays.length === 0 && (
-          <div style={{marginTop:'.8rem',fontSize:'.78rem',color:'var(--grey)'}}>✓ Calendar connected — no away days found in the next 30 days. Add events tagged with "away" or "holiday" and they'll appear here.</div>
+          <div style={{marginTop:'.8rem',padding:'.7rem 1rem',background:'rgba(122,158,126,.1)',borderRadius:'10px',border:'1px solid rgba(122,158,126,.2)',fontSize:'.78rem',color:'var(--sage)',fontWeight:'700'}}>
+            ✓ Calendar URLs saved successfully. No away days found in the next 30 days — add events with a location lasting 6+ hours and they'll appear here.
+          </div>
+        )}
+        {calError && (
+          <div style={{marginTop:'.8rem',padding:'.7rem 1rem',background:'rgba(193,113,79,.08)',borderRadius:'10px',border:'1px solid rgba(193,113,79,.2)',fontSize:'.78rem',color:'var(--terra)'}}>
+            ⚠️ {calError}
+          </div>
+        )}
+        {!loaded && (
+          <div style={{marginTop:'.5rem',fontSize:'.75rem',color:'var(--grey)'}}>Loading saved settings…</div>
         )}
       </div>
 
