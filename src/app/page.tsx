@@ -1267,7 +1267,17 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
         </button>
         {nameSaved && <div style={{ marginTop: '.5rem', fontSize: '.78rem', color: 'var(--sage)', fontWeight: '700' }}>✓ Names updated to {personAName} &amp; {personBName}</div>}
         {nameError && <div style={{ marginTop: '.5rem', fontSize: '.78rem', color: 'var(--terra)', fontWeight: '700' }}>⚠️ {nameError}</div>}
+
+        {/* Diagnostic panel */}
+        {loaded && (
+          <div style={{ marginTop: '1rem', padding: '.75rem 1rem', background: 'rgba(61,53,48,.05)', borderRadius: '10px', border: '1px solid rgba(61,53,48,.1)', fontSize: '.73rem', color: 'var(--grey)', lineHeight: '1.8' }}>
+            <div style={{ fontWeight: '700', color: 'var(--charcoal)', marginBottom: '.3rem' }}>🔍 Debug info</div>
+            <div>Household ID env var: <code style={{ background: 'rgba(0,0,0,.06)', padding: '0 .3rem', borderRadius: '4px' }}>{process.env.NEXT_PUBLIC_HOUSEHOLD_ID || '⚠️ NOT SET'}</code></div>
+            <div>Names in DB (as loaded): <strong style={{ color: 'var(--charcoal)' }}>{personAName}</strong> &amp; <strong style={{ color: 'var(--charcoal)' }}>{personBName}</strong></div>
+          </div>
+        )}
       </div>
+
 
       <div className="card" style={{ marginTop: '1.2rem' }}>
         <div className="card-title">📅 Google Calendar — Away Day Detection</div>
