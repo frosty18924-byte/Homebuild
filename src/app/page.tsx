@@ -1104,39 +1104,68 @@ function OverviewTab({ chores, bills, notifications, setTab }: any) {
 }
 
 // ─── SETTINGS / NOTIFICATIONS TAB ─────────────────────────────────────────────
-function SettingsTab({ household }: { household: Household | null }) {
-  const [botToken, setBotToken] = useState('')
-  const [chatId, setChatId] = useState('')
+function SettingsTab({ household, onHouseholdUpdate }: { household: Household | null; onHouseholdUpdate: () => void }) {
+  const [personAName, setPersonAName] = useState(household?.person_a_name || 'Person A')
+  const [personBName, setPersonBName] = useState(household?.person_b_name || 'Person B')
+  const [botToken, setBotToken] = useState(household?.telegram_bot_token || '')
+  const [chatId, setChatId] = useState(household?.telegram_chat_id || '')
+  const [calUrl1, setCalUrl1] = useState(household?.calendar_url_a || '')
+  const [calUrl2, setCalUrl2] = useState(household?.calendar_url_b || '')
   const [testing, setTesting] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [calUrl1, setCalUrl1] = useState('')
-  const [calUrl2, setCalUrl2] = useState('')
+  const [telegramSaved, setTelegramSaved] = useState(false)
+  const [nameSaved, setNameSaved] = useState(false)
   const [calSaved, setCalSaved] = useState(false)
   const [busyDays, setBusyDays] = useState<string[]>([])
   const [calTesting, setCalTesting] = useState(false)
 
-  const testTelegram = async () => {
-    setTesting(true)
-    await fetch('/api/notify', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ botToken, chatId, message:`🏡 <b>Hearth Test</b>\n\nYour Telegram notifications are working! You'll receive daily updates here at 8am every morning.` }),
-    })
-    setTesting(false)
-    setSaved(true)
+  // Load saved values when household data arrives
+  useEffect(() => {
+    if (household) {
+      setPersonAName(household.person_a_name || 'Person A')
+      setPersonBName(household.person_b_name || 'Person B')
+      setBotToken(household.telegram_bot_token || '')
+      setChatId(household.telegram_chat_id || '')
+      setCalUrl1(household.calendar_url_a || '')
+      setCalUrl2(household.calendar_url_b || '')
+    }
+  }, [household])
+
+  const saveNames = async () => {
+    await supabase.from('households').update({
+      person_a_name: personAName,
+      person_b_name: personBName,
+    }).eq('id', HOUSEHOLD_ID)
+    setNameSaved(true)
+    onHouseholdUpdate()
+    setTimeout(() => setNameSaved(false), 3000)
   }
 
-  const saveToDb = async () => {
+  const saveTelegram = async () => {
+    setTesting(true)
     await supabase.from('households').update({
       telegram_bot_token: botToken,
       telegram_chat_id: chatId,
     }).eq('id', HOUSEHOLD_ID)
-    setSaved(true)
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ botToken, chatId, message: `🏡 <b>Hearth Test</b>
+
+Your Telegram notifications are working! You'll receive daily updates here at 8am every morning.` }),
+    })
+    setTesting(false)
+    setTelegramSaved(true)
+    onHouseholdUpdate()
+    setTimeout(() => setTelegramSaved(false), 3000)
   }
 
-  const testCalendar = async () => {
+  const saveAndTestCalendar = async () => {
     setCalTesting(true)
     try {
+      await supabase.from('households').update({
+        calendar_url_a: calUrl1 || null,
+        calendar_url_b: calUrl2 || null,
+      }).eq('id', HOUSEHOLD_ID)
       const params = new URLSearchParams()
       if (calUrl1) params.set('url1', calUrl1)
       if (calUrl2) params.set('url2', calUrl2)
@@ -1144,6 +1173,7 @@ function SettingsTab({ household }: { household: Household | null }) {
       const data = await res.json()
       setBusyDays(data.busyDays || [])
       setCalSaved(true)
+      onHouseholdUpdate()
     } catch { setBusyDays([]) }
     setCalTesting(false)
   }
@@ -1195,7 +1225,7 @@ function SettingsTab({ household }: { household: Household | null }) {
             {[30,45,60,90].map(d=><option key={d} value={d}>{d} days</option>)}
           </select>
         </div>
-        <button className="btn-solid" style={{marginTop:'.5rem'}}>Save Changes</button>
+        <button className="btn-solid" style={{marginTop:'.5rem'}} onClick={saveNames}>{nameSaved ? '✓ Saved!' : 'Save Changes'}</button>
       </div>
 
       <div className="card" style={{marginTop:'1.2rem'}}>
@@ -1226,7 +1256,7 @@ function SettingsTab({ household }: { household: Household | null }) {
             <label className="form-label">Person B — iCal URL</label>
             <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-b..." value={calUrl2} onChange={e=>setCalUrl2(e.target.value)} />
           </div>
-          <button className="btn-solid" onClick={testCalendar} disabled={(!calUrl1&&!calUrl2)||calTesting} style={{alignSelf:'flex-start',padding:'.5rem 1.2rem'}}>
+          <button className="btn-solid" onClick={saveAndTestCalendar} disabled={(!calUrl1&&!calUrl2)||calTesting} style={{alignSelf:'flex-start',padding:'.5rem 1.2rem'}}>
             {calTesting?'Connecting…':calSaved?'✓ Connected — Refresh':'Connect Calendars'}
           </button>
         </div>
@@ -1407,7 +1437,7 @@ export default function App() {
           {tab === 'meals' && <MealsTab />}
           {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} onAdd={handleAddBill} onEdit={handleEditBill} onDelete={handleDeleteBill} />}
           {tab === 'ai' && <AITab chores={chores} bills={bills} notifications={notifications} />}
-          {tab === 'settings' && <SettingsTab household={household} />}
+          {tab === 'settings' && <SettingsTab household={household} onHouseholdUpdate={() => getHousehold().then(setHousehold)} />}
         </main>
       </div>
     </>
