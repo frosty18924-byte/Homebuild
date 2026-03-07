@@ -1356,8 +1356,8 @@ export default function App() {
   const [bills, setBills] = useState<Bill[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [household, setHousehold] = useState<Household | null>(null)
-  const [nameA, setNameA] = useState('Matt')
-  const [nameB, setNameB] = useState('Maisie')
+  const [nameA, setNameA] = useState('Person A')
+  const [nameB, setNameB] = useState('Person B')
   const [loading, setLoading] = useState({ chores:true, bills:true, notifs:true })
 
   const loadAll = async () => {
