@@ -1232,20 +1232,16 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
         <div className="form-row" style={{marginBottom:'1rem'}}>
           <div className="form-group">
             <label className="form-label">Person A name</label>
-            <input className="form-input" defaultValue={household?.person_a_name || 'Person A'} />
+            <input className="form-input" value={personAName} onChange={e => setPersonAName(e.target.value)} placeholder="e.g. Matt" />
           </div>
           <div className="form-group">
             <label className="form-label">Person B name</label>
-            <input className="form-input" defaultValue={household?.person_b_name || 'Person B'} />
+            <input className="form-input" value={personBName} onChange={e => setPersonBName(e.target.value)} placeholder="e.g. Maisie" />
           </div>
         </div>
-        <div className="form-group">
-          <label className="form-label">Alert me this many days before renewal</label>
-          <select className="form-input" defaultValue={household?.notify_days_before || 60} style={{maxWidth:'200px'}}>
-            {[30,45,60,90].map(d=><option key={d} value={d}>{d} days</option>)}
-          </select>
-        </div>
-        <button className="btn-solid" style={{marginTop:'.5rem'}} onClick={saveNames}>{nameSaved ? '✓ Saved!' : 'Save Changes'}</button>
+        <button className="btn-solid" style={{marginTop:'.5rem'}} onClick={saveNames} disabled={!personAName||!personBName}>
+          {nameSaved ? '✓ Saved!' : 'Save Names'}
+        </button>
       </div>
 
       <div className="card" style={{marginTop:'1.2rem'}}>
