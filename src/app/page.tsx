@@ -1150,10 +1150,22 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
       setNameError('Both names are required')
       return
     }
+    // Debug: show exactly what we're trying to save and to which ID
+    const debugId = process.env.NEXT_PUBLIC_HOUSEHOLD_ID
+    if (!debugId) {
+      setNameError('Error: NEXT_PUBLIC_HOUSEHOLD_ID is not set in Vercel environment variables')
+      return
+    }
+    // Use the ID directly from the loaded data rather than env var
+    const { data: current } = await supabase.from('households').select('id').single()
+    if (!current) {
+      setNameError('Error: Could not find household record in database')
+      return
+    }
     const { error } = await supabase
       .from('households')
       .update({ person_a_name: personAName.trim(), person_b_name: personBName.trim() })
-      .eq('id', HOUSEHOLD_ID)
+      .eq('id', current.id)
     if (error) {
       setNameError('Save failed: ' + error.message)
       return
@@ -1165,10 +1177,11 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
 
   const saveTelegram = async () => {
     setTesting(true)
-    await supabase.from('households').update({
+    const { data: hh } = await supabase.from('households').select('id').single()
+    if (hh) await supabase.from('households').update({
       telegram_bot_token: botToken,
       telegram_chat_id: chatId,
-    }).eq('id', HOUSEHOLD_ID)
+    }).eq('id', hh.id)
     await fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1187,10 +1200,12 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
     setCalError('')
     try {
       // Save to Supabase first
+      const { data: hh } = await supabase.from('households').select('id').single()
+      if (!hh) throw new Error('Could not find household record')
       const { error: dbError } = await supabase.from('households').update({
         calendar_url_a: calUrl1 || null,
         calendar_url_b: calUrl2 || null,
-      }).eq('id', HOUSEHOLD_ID)
+      }).eq('id', hh.id)
       if (dbError) throw new Error('Database save failed: ' + dbError.message)
 
       // Then fetch busy days
