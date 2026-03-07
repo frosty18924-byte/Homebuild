@@ -94,10 +94,20 @@ export type Notification = {
 }
 
 export async function getHousehold() {
+  // Try with HOUSEHOLD_ID first, fall back to first row if env var missing/wrong
+  if (HOUSEHOLD_ID) {
+    const { data } = await supabase
+      .from('households')
+      .select('*')
+      .eq('id', HOUSEHOLD_ID)
+      .single()
+    if (data) return data as Household
+  }
+  // Fallback: just grab the first household
   const { data } = await supabase
     .from('households')
     .select('*')
-    .eq('id', HOUSEHOLD_ID)
+    .limit(1)
     .single()
   return data as Household | null
 }
