@@ -1367,18 +1367,37 @@ export default function App() {
   const [loading, setLoading] = useState({ chores: true, bills: true, notifs: true })
 
   const loadAll = async () => {
-    const [c, b, n, h] = await Promise.all([
-      getChores(), getBills(), getNotifications(), getHousehold()
+    const [c, b, n] = await Promise.all([
+      getChores(), getBills(), getNotifications()
     ])
     setChores(c)
     setBills(b)
     setNotifications(n)
-    setHousehold(h)
-    if (h) {
-      setNameA(h.person_a_name || 'Person A')
-      setNameB(h.person_b_name || 'Person B')
-    }
     setLoading({ chores: false, bills: false, notifs: false })
+
+    // Fetch household directly — same pattern as SettingsTab which is confirmed working
+    try {
+      const { data: h } = await supabase
+        .from('households')
+        .select('*')
+        .eq('id', HOUSEHOLD_ID)
+        .single()
+      if (h) {
+        setHousehold(h)
+        setNameA(h.person_a_name || 'Person A')
+        setNameB(h.person_b_name || 'Person B')
+      } else {
+        // Fallback: grab first row
+        const { data: h2 } = await supabase.from('households').select('*').limit(1).single()
+        if (h2) {
+          setHousehold(h2)
+          setNameA(h2.person_a_name || 'Person A')
+          setNameB(h2.person_b_name || 'Person B')
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch household:', e)
+    }
   }
 
   useEffect(() => {
