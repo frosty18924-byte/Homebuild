@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   supabase, HOUSEHOLD_ID,
   getChores, markChoreDone, addChore, updateChore, deleteChore,
-  getBills, getDealsForBill,
+  getBills, addBill, updateBill, deleteBill, getDealsForBill,
   getMealPlan, saveMealPlan,
   getNotifications, markNotificationRead, markAllNotificationsRead,
   getHousehold,
@@ -478,11 +478,155 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete }: {
   )
 }
 
+
+// ─── MODAL: Add Bill ──────────────────────────────────────────────────────────
+function AddBillModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any) => Promise<void> }) {
+  const [form, setForm] = useState({ name:'', icon:'💰', color:'#C1714F', provider:'', bill_type:'other', amount_pence:0, due_day_of_month:1, renewal_date:'' })
+  const [saving, setSaving] = useState(false)
+  const TYPES = ['mortgage','energy','broadband','car_insurance','home_insurance','council','other']
+  const ICONS = ['💰','🏡','⚡','📡','🚗','🔒','🏛️','📺','💧','🌐']
+  const submit = async () => {
+    if (!form.name) return
+    setSaving(true)
+    await onAdd({ ...form, amount_pence: Math.round(form.amount_pence * 100), renewal_date: form.renewal_date || null })
+    onClose()
+  }
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">Add New Bill</div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Bill name</label>
+            <input className="form-input" placeholder="e.g. Water bill" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Icon</label>
+            <select className="form-input" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})}>
+              {ICONS.map(i=><option key={i}>{i}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Provider</label>
+            <input className="form-input" placeholder="e.g. Thames Water" value={form.provider} onChange={e=>setForm({...form,provider:e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Type</label>
+            <select className="form-input" value={form.bill_type} onChange={e=>setForm({...form,bill_type:e.target.value})}>
+              {TYPES.map(t=><option key={t} value={t}>{t.replace('_',' ')}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Monthly amount (£)</label>
+            <input type="number" className="form-input" placeholder="0.00" step="0.01" value={form.amount_pence||''} onChange={e=>setForm({...form,amount_pence:+e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Payment day of month</label>
+            <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e=>setForm({...form,due_day_of_month:+e.target.value})} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Renewal date (optional)</label>
+          <input type="date" className="form-input" value={form.renewal_date} onChange={e=>setForm({...form,renewal_date:e.target.value})} />
+        </div>
+        <div className="modal-actions">
+          <button className="btn-out" onClick={onClose}>Cancel</button>
+          <button className="btn-solid" onClick={submit} disabled={saving}>{saving?'Adding…':'Add Bill'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── MODAL: Edit Bill ─────────────────────────────────────────────────────────
+function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => void; onSave: (id: string, f: any) => Promise<void> }) {
+  const [form, setForm] = useState({
+    name: bill.name,
+    icon: bill.icon,
+    provider: bill.provider || '',
+    bill_type: bill.bill_type,
+    amount_pounds: (bill.amount_pence / 100).toFixed(2),
+    due_day_of_month: bill.due_day_of_month || 1,
+    renewal_date: bill.renewal_date ? bill.renewal_date.split('T')[0] : '',
+  })
+  const [saving, setSaving] = useState(false)
+  const TYPES = ['mortgage','energy','broadband','car_insurance','home_insurance','council','other']
+  const ICONS = ['💰','🏡','⚡','📡','🚗','🔒','🏛️','📺','💧','🌐']
+  const submit = async () => {
+    setSaving(true)
+    await onSave(bill.id, {
+      name: form.name,
+      icon: form.icon,
+      provider: form.provider,
+      bill_type: form.bill_type,
+      amount_pence: Math.round(parseFloat(form.amount_pounds) * 100),
+      due_day_of_month: form.due_day_of_month,
+      renewal_date: form.renewal_date || null,
+    })
+    onClose()
+  }
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">Edit Bill</div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Bill name</label>
+            <input className="form-input" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Icon</label>
+            <select className="form-input" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})}>
+              {ICONS.map(i=><option key={i}>{i}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Provider</label>
+            <input className="form-input" value={form.provider} onChange={e=>setForm({...form,provider:e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Type</label>
+            <select className="form-input" value={form.bill_type} onChange={e=>setForm({...form,bill_type:e.target.value})}>
+              {TYPES.map(t=><option key={t} value={t}>{t.replace('_',' ')}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Monthly amount (£)</label>
+            <input type="number" className="form-input" step="0.01" value={form.amount_pounds} onChange={e=>setForm({...form,amount_pounds:e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Payment day of month</label>
+            <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e=>setForm({...form,due_day_of_month:+e.target.value})} />
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Renewal date</label>
+          <input type="date" className="form-input" value={form.renewal_date} onChange={e=>setForm({...form,renewal_date:e.target.value})} />
+        </div>
+        <div className="modal-actions">
+          <button className="btn-out" onClick={onClose}>Cancel</button>
+          <button className="btn-solid" onClick={submit} disabled={saving}>{saving?'Saving…':'Save Changes'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── BILLS TAB ────────────────────────────────────────────────────────────────
-function BillsTab({ bills, loading }: { bills: Bill[]; loading: boolean }) {
+function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; loading: boolean; onEdit: (id: string, f: any) => Promise<void>; onDelete: (id: string) => Promise<void>; onAdd: (f: any) => Promise<void> }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [searching, setSearching] = useState<Record<string,boolean>>({})
   const [deals, setDeals] = useState<Record<string, BillDeal[]>>({})
+  const [editBill, setEditBill] = useState<Bill | null>(null)
+  const [showAddBill, setShowAddBill] = useState(false)
 
   const searchDeals = async (bill: Bill) => {
     if (searching[bill.id]) return
@@ -510,12 +654,14 @@ function BillsTab({ bills, loading }: { bills: Bill[]; loading: boolean }) {
 
   return (
     <div>
+      {editBill && <EditBillModal bill={editBill} onClose={() => setEditBill(null)} onSave={onEdit} />}
+      {showAddBill && <AddBillModal onClose={() => setShowAddBill(false)} onAdd={onAdd} />}
       <div className="section-hdr">
         <div>
           <h2 className="section-title">Bills & <span>Deals</span></h2>
           <p className="section-sub">Auto-alerts 60 days out · AI searches live deals · data from Supabase</p>
         </div>
-        <button className="btn-out">+ Add Bill</button>
+        <button className="btn-out" onClick={() => setShowAddBill(true)}>+ Add Bill</button>
       </div>
       {loading ? (
         <div style={{display:'flex',flexDirection:'column',gap:'.8rem'}}>
@@ -564,6 +710,10 @@ function BillsTab({ bills, loading }: { bills: Bill[]; loading: boolean }) {
                       </button>
                     )}
                     {!isUrgent && <span style={{fontSize:'.7rem',color:'var(--grey)',display:'block',marginTop:'.3rem'}}>✓ No action needed yet</span>}
+                    <div style={{display:'flex',gap:'.4rem',marginTop:'.5rem',justifyContent:'flex-end'}}>
+                      <button className="chore-btn" style={{maxWidth:'38px',fontSize:'.85rem',padding:'.3rem'}} onClick={() => setEditBill(bill)} title="Edit">✏️</button>
+                      <button className="chore-btn" style={{maxWidth:'38px',fontSize:'.85rem',padding:'.3rem',borderColor:'rgba(193,113,79,.2)',color:'var(--grey)'}} onClick={() => onDelete(bill.id)} title="Remove">🗑️</button>
+                    </div>
                   </div>
                 </div>
 
@@ -959,13 +1109,18 @@ function SettingsTab({ household }: { household: Household | null }) {
   const [chatId, setChatId] = useState('')
   const [testing, setTesting] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [calUrl1, setCalUrl1] = useState('')
+  const [calUrl2, setCalUrl2] = useState('')
+  const [calSaved, setCalSaved] = useState(false)
+  const [busyDays, setBusyDays] = useState<string[]>([])
+  const [calTesting, setCalTesting] = useState(false)
 
   const testTelegram = async () => {
     setTesting(true)
     await fetch('/api/notify', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ botToken, chatId, message:`🏡 <b>Hearth Test</b>\n\nYour Telegram notifications are working! You'll receive daily updates here.` }),
+      body: JSON.stringify({ botToken, chatId, message:`🏡 <b>Hearth Test</b>\n\nYour Telegram notifications are working! You'll receive daily updates here at 8am every morning.` }),
     })
     setTesting(false)
     setSaved(true)
@@ -977,6 +1132,20 @@ function SettingsTab({ household }: { household: Household | null }) {
       telegram_chat_id: chatId,
     }).eq('id', HOUSEHOLD_ID)
     setSaved(true)
+  }
+
+  const testCalendar = async () => {
+    setCalTesting(true)
+    try {
+      const params = new URLSearchParams()
+      if (calUrl1) params.set('url1', calUrl1)
+      if (calUrl2) params.set('url2', calUrl2)
+      const res = await fetch(`/api/calendar?${params.toString()}`)
+      const data = await res.json()
+      setBusyDays(data.busyDays || [])
+      setCalSaved(true)
+    } catch { setBusyDays([]) }
+    setCalTesting(false)
   }
 
   return (
@@ -1030,15 +1199,65 @@ function SettingsTab({ household }: { household: Household | null }) {
       </div>
 
       <div className="card" style={{marginTop:'1.2rem'}}>
+        <div className="card-title">📅 Google Calendar — Away Day Detection</div>
+        <p style={{fontSize:'.85rem',color:'var(--grey)',lineHeight:'1.6',marginBottom:'1rem'}}>
+          Link your Google Calendar so Hearth knows when you're away. Chores due on busy days automatically move to the day before.
+        </p>
+        <div className="setup-steps" style={{marginBottom:'1rem'}}>
+          <div className="setup-step" style={{color:'var(--charcoal)'}}>
+            <div className="step-num" style={{background:'rgba(193,113,79,.15)',color:'var(--terra)'}}>1</div>
+            Open <strong>Google Calendar</strong> on desktop → click the three dots next to your calendar name → <strong>Settings and sharing</strong>
+          </div>
+          <div className="setup-step" style={{color:'var(--charcoal)'}}>
+            <div className="step-num" style={{background:'rgba(193,113,79,.15)',color:'var(--terra)'}}>2</div>
+            Scroll to <strong>Integrate calendar</strong> → copy the <strong>Secret address in iCal format</strong> link
+          </div>
+          <div className="setup-step" style={{color:'var(--charcoal)'}}>
+            <div className="step-num" style={{background:'rgba(193,113,79,.15)',color:'var(--terra)'}}>3</div>
+            Paste it below. Tag any away events with words like <strong>away, holiday, out, travel</strong> so Hearth knows to move chores
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:'.6rem',marginBottom:'.8rem'}}>
+          <div>
+            <label className="form-label">Person A — iCal URL</label>
+            <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-a..." value={calUrl1} onChange={e=>setCalUrl1(e.target.value)} />
+          </div>
+          <div>
+            <label className="form-label">Person B — iCal URL</label>
+            <input className="form-input" placeholder="https://calendar.google.com/calendar/ical/person-b..." value={calUrl2} onChange={e=>setCalUrl2(e.target.value)} />
+          </div>
+          <button className="btn-solid" onClick={testCalendar} disabled={(!calUrl1&&!calUrl2)||calTesting} style={{alignSelf:'flex-start',padding:'.5rem 1.2rem'}}>
+            {calTesting?'Connecting…':calSaved?'✓ Connected — Refresh':'Connect Calendars'}
+          </button>
+        </div>
+        {busyDays.length > 0 && (
+          <div style={{marginTop:'1rem',padding:'.8rem 1rem',background:'rgba(122,158,126,.1)',borderRadius:'10px',border:'1px solid rgba(122,158,126,.2)'}}>
+            <div style={{fontSize:'.78rem',fontWeight:'700',color:'var(--sage)',marginBottom:'.4rem'}}>📅 Away days detected in next 30 days:</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:'.4rem'}}>
+              {busyDays.map(d=>(
+                <span key={d} style={{fontSize:'.72rem',padding:'.2rem .6rem',background:'white',borderRadius:'20px',border:'1px solid rgba(122,158,126,.3)',color:'var(--charcoal)'}}>
+                  {new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}
+                </span>
+              ))}
+            </div>
+            <div style={{fontSize:'.72rem',color:'var(--grey)',marginTop:'.5rem'}}>Chores due on these days will be moved to the day before automatically.</div>
+          </div>
+        )}
+        {calSaved && busyDays.length === 0 && (
+          <div style={{marginTop:'.8rem',fontSize:'.78rem',color:'var(--grey)'}}>✓ Calendar connected — no away days found in the next 30 days. Add events tagged with "away" or "holiday" and they'll appear here.</div>
+        )}
+      </div>
+
+      <div className="card" style={{marginTop:'1.2rem'}}>
         <div className="card-title">📡 Cross-Device Access</div>
         <p style={{fontSize:'.85rem',color:'var(--grey)',lineHeight:'1.6',marginBottom:'1rem'}}>
-          Your Hearth app is deployed on Vercel and connected to Supabase. Both people in your household can access the same data from any device by visiting your Vercel URL.
+          Both of you access Hearth on any device. Add it to your phone home screen for a native app feel.
         </p>
         <div style={{background:'var(--linen)',borderRadius:'10px',padding:'1rem',fontFamily:'monospace',fontSize:'.82rem',color:'var(--charcoal)'}}>
           {process.env.NEXT_PUBLIC_APP_URL || 'https://your-hearth-app.vercel.app'}
         </div>
         <div style={{marginTop:'.8rem',fontSize:'.78rem',color:'var(--grey)'}}>
-          💡 Add this to your phone home screen for native-app experience: Safari/Chrome → Share → Add to Home Screen
+          💡 Safari/Chrome → Share → Add to Home Screen
         </div>
       </div>
     </div>
@@ -1112,6 +1331,25 @@ export default function App() {
     setChores(updated)
   }
 
+  const handleAddBill = async (form: any) => {
+    await addBill(form)
+    const updated = await getBills()
+    setBills(updated)
+  }
+
+  const handleEditBill = async (id: string, form: any) => {
+    await updateBill(id, form)
+    const updated = await getBills()
+    setBills(updated)
+  }
+
+  const handleDeleteBill = async (id: string) => {
+    if (!confirm('Remove this bill?')) return
+    await deleteBill(id)
+    const updated = await getBills()
+    setBills(updated)
+  }
+
   const overdue = chores.filter(c => choreStatus(c) === 'overdue').length
   const urgentBills = bills.filter(b => b.renewal_date && Math.round((new Date(b.renewal_date).getTime()-Date.now())/86400000)<=60).length
   const unread = notifications.filter(n => !n.is_read).length
@@ -1167,7 +1405,7 @@ export default function App() {
           {tab === 'overview' && <OverviewTab chores={chores} bills={bills} notifications={notifications} setTab={setTab} />}
           {tab === 'chores' && <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} />}
           {tab === 'meals' && <MealsTab />}
-          {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} />}
+          {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} onAdd={handleAddBill} onEdit={handleEditBill} onDelete={handleDeleteBill} />}
           {tab === 'ai' && <AITab chores={chores} bills={bills} notifications={notifications} />}
           {tab === 'settings' && <SettingsTab household={household} />}
         </main>
