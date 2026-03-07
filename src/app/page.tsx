@@ -1201,7 +1201,7 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
           <input className="setup-inp" placeholder="Bot token (from BotFather)…" value={botToken} onChange={e=>setBotToken(e.target.value)} />
           <input className="setup-inp" placeholder="Chat ID (from getUpdates)…" value={chatId} onChange={e=>setChatId(e.target.value)} />
           <button className="btn-solid" style={{padding:'.6rem 1.2rem',fontSize:'.78rem',whiteSpace:'nowrap'}}
-            onClick={async ()=>{await saveToDb(); await testTelegram();}} disabled={!botToken||!chatId||testing}>
+            onClick={saveTelegram} disabled={!botToken||!chatId||testing}>
             {testing?'Sending test…':telegramSaved?'✓ Saved & Tested':'Save & Test'}
           </button>
         </div>
