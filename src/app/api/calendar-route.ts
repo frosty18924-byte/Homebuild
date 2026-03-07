@@ -1,151 +1,184 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// ─── Fetch busy days from a public Google Calendar ICS feed ──────────────────
-// Users share their calendar as a public ICS URL — no OAuth needed
-async function fetchBusyDays(icalUrl: string, daysAhead: number = 14): Promise<string[]> {
+// ─── Parse duration from DURATION field e.g. PT6H30M ─────────────────────────
+function parseDurationHours(duration: string): number {
+  const hours = duration.match(/(\d+)H/)?.[1] || '0'
+  const mins = duration.match(/(\d+)M/)?.[1] || '0'
+  return parseInt(hours) + parseInt(mins) / 60
+}
+
+// ─── Parse iCal datetime to Date ─────────────────────────────────────────────
+function parseIcalDate(str: string): Date | null {
+  try {
+    // All-day: 20250315
+    if (/^\d{8}$/.test(str)) {
+      return new Date(
+        parseInt(str.slice(0,4)),
+        parseInt(str.slice(4,6)) - 1,
+        parseInt(str.slice(6,8))
+      )
+    }
+    // DateTime: 20250315T090000Z or 20250315T090000
+    if (/^\d{8}T\d{6}/.test(str)) {
+      return new Date(
+        parseInt(str.slice(0,4)),
+        parseInt(str.slice(4,6)) - 1,
+        parseInt(str.slice(6,8)),
+        parseInt(str.slice(9,11)),
+        parseInt(str.slice(11,13))
+      )
+    }
+  } catch {}
+  return null
+}
+
+// ─── Parse one iCal feed and return busy days ─────────────────────────────────
+async function fetchBusyDays(icalUrl: string, daysAhead: number = 30): Promise<string[]> {
   try {
     const res = await fetch(icalUrl, { next: { revalidate: 3600 } })
-    if (!res.ok) throw new Error('Could not fetch calendar')
+    if (!res.ok) throw new Error(`Calendar fetch failed: ${res.status}`)
     const ical = await res.text()
 
     const busyDays = new Set<string>()
     const today = new Date()
+    today.setHours(0,0,0,0)
     const cutoff = new Date()
     cutoff.setDate(today.getDate() + daysAhead)
 
-    // Parse VEVENT blocks
-    const events = ical.split('BEGIN:VEVENT')
-    events.shift() // remove header
+    // Split into VEVENT blocks
+    const eventBlocks = ical.split('BEGIN:VEVENT')
+    eventBlocks.shift()
 
-    for (const event of events) {
-      // Check if it's an all-day event (DTSTART without time component)
-      const allDayMatch = event.match(/DTSTART;VALUE=DATE:(\d{8})/)
-      const dateTimeMatch = event.match(/DTSTART(?:;TZID=[^:]+)?:(\d{8})/)
-      const summaryMatch = event.match(/SUMMARY:([^\r\n]+)/)
+    for (const block of eventBlocks) {
+      // Extract fields
+      const dtStartRaw = block.match(/DTSTART(?:;[^:]+)?:([^\r\n]+)/)?.[1]?.trim()
+      const dtEndRaw   = block.match(/DTEND(?:;[^:]+)?:([^\r\n]+)/)?.[1]?.trim()
+      const durationRaw = block.match(/DURATION:([^\r\n]+)/)?.[1]?.trim()
+      const location   = block.match(/LOCATION:([^\r\n]+)/)?.[1]?.trim() || ''
 
-      // Skip events that aren't "out of house" indicators
-      // Users can tag events with keywords like "away", "holiday", "out"
-      const summary = summaryMatch?.[1]?.toLowerCase() || ''
-      const isAbsence = summary.includes('away') ||
-        summary.includes('holiday') ||
-        summary.includes('out') ||
-        summary.includes('travel') ||
-        summary.includes('vacation') ||
-        summary.includes('trip') ||
-        summary.includes('off') ||
-        summary.includes('leave')
+      if (!dtStartRaw) continue
 
-      const dateStr = allDayMatch?.[1] || dateTimeMatch?.[1]
-      if (!dateStr) continue
+      const isAllDay = /DTSTART;VALUE=DATE:/.test(block)
 
-      const year = parseInt(dateStr.slice(0, 4))
-      const month = parseInt(dateStr.slice(4, 6)) - 1
-      const day = parseInt(dateStr.slice(6, 8))
-      const eventDate = new Date(year, month, day)
+      // All-day events with a location = away day
+      if (isAllDay && location) {
+        const startDate = parseIcalDate(dtStartRaw)
+        const endDate = dtEndRaw ? parseIcalDate(dtEndRaw) : null
+        if (!startDate) continue
 
-      if (eventDate >= today && eventDate <= cutoff) {
-        // Add the day — if tagged as absence, or if it's an all-day event with no specific work context
-        if (isAbsence || allDayMatch) {
-          const key = eventDate.toISOString().split('T')[0]
-          busyDays.add(key)
+        // All-day events have DTEND = day AFTER last day
+        const endDateAdj = endDate ? new Date(endDate) : new Date(startDate)
+        endDateAdj.setDate(endDateAdj.getDate() - (endDate ? 1 : 0))
+
+        let d = new Date(startDate)
+        while (d <= endDateAdj) {
+          if (d >= today && d <= cutoff) {
+            busyDays.add(d.toISOString().split('T')[0])
+          }
+          d.setDate(d.getDate() + 1)
         }
+        continue
+      }
+
+      // Timed events — check duration >= 6 hours AND has location
+      if (!location) continue
+
+      const startDate = parseIcalDate(dtStartRaw)
+      if (!startDate || startDate < today || startDate > cutoff) continue
+
+      let durationHours = 0
+
+      if (durationRaw) {
+        durationHours = parseDurationHours(durationRaw)
+      } else if (dtEndRaw) {
+        const endDate = parseIcalDate(dtEndRaw)
+        if (endDate) {
+          durationHours = (endDate.getTime() - startDate.getTime()) / 3600000
+        }
+      }
+
+      if (durationHours >= 6) {
+        busyDays.add(startDate.toISOString().split('T')[0])
       }
     }
 
     return Array.from(busyDays).sort()
   } catch (err) {
-    console.error('Calendar fetch error:', err)
+    console.error('Calendar parse error:', err)
     return []
   }
 }
 
-// ─── Given a due date and busy days, find the best day to do the chore ───────
-function adjustDueDate(dueDate: string, busyDays: string[]): {
-  originalDate: string
+// ─── Merge busy days from multiple calendars ──────────────────────────────────
+async function fetchAllBusyDays(urls: string[]): Promise<string[]> {
+  const results = await Promise.all(urls.map(url => fetchBusyDays(url)))
+  const merged = new Set<string>()
+  results.forEach(days => days.forEach(d => merged.add(d)))
+  return Array.from(merged).sort()
+}
+
+// ─── Adjust a chore due date around busy days ────────────────────────────────
+function adjustDueDate(dueDate: string, busyDays: Set<string>): {
   adjustedDate: string
   wasAdjusted: boolean
   reason: string
 } {
-  const busySet = new Set(busyDays)
-
-  if (!busySet.has(dueDate)) {
-    return { originalDate: dueDate, adjustedDate: dueDate, wasAdjusted: false, reason: '' }
+  if (!busyDays.has(dueDate)) {
+    return { adjustedDate: dueDate, wasAdjusted: false, reason: '' }
   }
 
-  // Try the day before
   const due = new Date(dueDate)
-  const dayBefore = new Date(due)
-  dayBefore.setDate(due.getDate() - 1)
-  const dayBeforeStr = dayBefore.toISOString().split('T')[0]
+  const dayLabel = due.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })
 
-  if (!busySet.has(dayBeforeStr)) {
-    return {
-      originalDate: dueDate,
-      adjustedDate: dayBeforeStr,
-      wasAdjusted: true,
-      reason: `Moved earlier — you're away on ${new Date(dueDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}`,
+  // Try 1 day before, 2 days before, then 1 day after
+  for (const offset of [-1, -2, -3, 1]) {
+    const candidate = new Date(due)
+    candidate.setDate(due.getDate() + offset)
+    const candidateStr = candidate.toISOString().split('T')[0]
+    if (!busyDays.has(candidateStr)) {
+      const direction = offset < 0 ? `${Math.abs(offset)} day${Math.abs(offset)>1?'s':''} earlier` : '1 day later'
+      return {
+        adjustedDate: candidateStr,
+        wasAdjusted: true,
+        reason: `Moved ${direction} — someone's out on ${dayLabel}`,
+      }
     }
   }
 
-  // Try 2 days before
-  const twoBefore = new Date(due)
-  twoBefore.setDate(due.getDate() - 2)
-  const twoBeforeStr = twoBefore.toISOString().split('T')[0]
-
-  if (!busySet.has(twoBeforeStr)) {
-    return {
-      originalDate: dueDate,
-      adjustedDate: twoBeforeStr,
-      wasAdjusted: true,
-      reason: `Moved 2 days earlier — you're away on ${new Date(dueDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}`,
-    }
-  }
-
-  // Try day after as last resort
-  const dayAfter = new Date(due)
-  dayAfter.setDate(due.getDate() + 1)
-  const dayAfterStr = dayAfter.toISOString().split('T')[0]
-
-  return {
-    originalDate: dueDate,
-    adjustedDate: dayAfterStr,
-    wasAdjusted: true,
-    reason: `Moved to day after — surrounding days are also busy`,
-  }
+  return { adjustedDate: dueDate, wasAdjusted: false, reason: 'Could not find a free day nearby' }
 }
 
-// ─── GET: Fetch busy days from calendar URL ───────────────────────────────────
+// ─── GET: Fetch busy days from one or two calendar URLs ───────────────────────
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const calUrl = searchParams.get('url')
+  const url1 = searchParams.get('url1') || searchParams.get('url')
+  const url2 = searchParams.get('url2')
 
-  if (!calUrl) {
+  if (!url1) {
     return NextResponse.json({ error: 'No calendar URL provided' }, { status: 400 })
   }
 
-  try {
-    const busyDays = await fetchBusyDays(calUrl, 30)
-    return NextResponse.json({ busyDays })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
+  const urls = [url1, url2].filter(Boolean) as string[]
+  const busyDays = await fetchAllBusyDays(urls)
+
+  return NextResponse.json({ busyDays, count: busyDays.length })
 }
 
-// ─── POST: Check chore due dates against calendar and suggest adjustments ─────
+// ─── POST: Check chore due dates and return adjustments ───────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { calendarUrl, chores } = await req.json()
+    const { calendarUrl1, calendarUrl2, chores } = await req.json()
 
-    if (!calendarUrl) {
-      return NextResponse.json({ adjustments: [] })
-    }
+    const urls = [calendarUrl1, calendarUrl2].filter(Boolean) as string[]
+    if (urls.length === 0) return NextResponse.json({ adjustments: [], busyDays: [] })
 
-    const busyDays = await fetchBusyDays(calendarUrl, 30)
+    const busyDays = await fetchAllBusyDays(urls)
+    const busySet = new Set(busyDays)
 
     const adjustments = chores
       .map((chore: any) => {
-        const result = adjustDueDate(chore.dueDate, busyDays)
-        return { choreId: chore.id, choreName: chore.name, ...result }
+        const result = adjustDueDate(chore.dueDate, busySet)
+        return { choreId: chore.id, choreName: chore.name, originalDate: chore.dueDate, ...result }
       })
       .filter((a: any) => a.wasAdjusted)
 
