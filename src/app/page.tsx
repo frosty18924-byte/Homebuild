@@ -1188,7 +1188,7 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
       </div>
 
       <div className="setup-card">
-        <div className="setup-title">📱 Telegram Push Notifications {saved ? '— ✓ Connected' : ''}</div>
+        <div className="setup-title">📱 Telegram Push Notifications {telegramSaved ? '— ✓ Connected' : ''}</div>
         <p style={{fontSize:'.82rem',color:'rgba(245,240,232,.75)',marginTop:'.4rem'}}>
           Hearth sends daily summaries + urgent alerts (overdue chores, bills renewing soon) straight to your Telegram.
         </p>
@@ -1202,7 +1202,7 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
           <input className="setup-inp" placeholder="Chat ID (from getUpdates)…" value={chatId} onChange={e=>setChatId(e.target.value)} />
           <button className="btn-solid" style={{padding:'.6rem 1.2rem',fontSize:'.78rem',whiteSpace:'nowrap'}}
             onClick={async ()=>{await saveToDb(); await testTelegram();}} disabled={!botToken||!chatId||testing}>
-            {testing?'Sending test…':saved?'✓ Saved & Tested':'Save & Test'}
+            {testing?'Sending test…':telegramSaved?'✓ Saved & Tested':'Save & Test'}
           </button>
         </div>
       </div>
