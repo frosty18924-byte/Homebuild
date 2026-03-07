@@ -1356,6 +1356,8 @@ export default function App() {
   const [bills, setBills] = useState<Bill[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [household, setHousehold] = useState<Household | null>(null)
+  const [nameA, setNameA] = useState('Matt')
+  const [nameB, setNameB] = useState('Maisie')
   const [loading, setLoading] = useState({ chores:true, bills:true, notifs:true })
 
   const loadAll = async () => {
@@ -1366,6 +1368,10 @@ export default function App() {
     setBills(b)
     setNotifications(n)
     setHousehold(h)
+    if (h) {
+      setNameA(h.person_a_name || 'Person A')
+      setNameB(h.person_b_name || 'Person B')
+    }
     setLoading({ chores:false, bills:false, notifs:false })
   }
 
@@ -1488,11 +1494,11 @@ export default function App() {
 
         <main className="main">
           {tab === 'overview' && <OverviewTab chores={chores} bills={bills} notifications={notifications} setTab={setTab} />}
-          {tab === 'chores' && <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} nameA={household?.person_a_name || 'Person A'} nameB={household?.person_b_name || 'Person B'} />}
+          {tab === 'chores' && <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} nameA={nameA} nameB={nameB} />}
           {tab === 'meals' && <MealsTab />}
           {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} onAdd={handleAddBill} onEdit={handleEditBill} onDelete={handleDeleteBill} />}
           {tab === 'ai' && <AITab chores={chores} bills={bills} notifications={notifications} />}
-          {tab === 'settings' && <SettingsTab household={household} onHouseholdUpdate={() => getHousehold().then(setHousehold)} />}
+          {tab === 'settings' && <SettingsTab household={household} onHouseholdUpdate={() => getHousehold().then(h => { if(h) { setHousehold(h); setNameA(h.person_a_name||'Person A'); setNameB(h.person_b_name||'Person B') } })} />}
         </main>
       </div>
     </>
