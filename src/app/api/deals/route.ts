@@ -10,10 +10,10 @@ const supabase = createClient(
 
 const DEAL_PROMPTS: Record<string, string> = {
   mortgage: 'UK mortgage deals fixed rate 2 and 5 year best rates today',
-  energy:   'UK energy suppliers cheapest tariffs gas electric comparison today',
-  broadband:'UK broadband deals cheapest fastest fibre comparison today',
+  energy: 'UK energy suppliers cheapest tariffs gas electric comparison today',
+  broadband: 'UK broadband deals cheapest fastest fibre comparison today',
   car_insurance: 'UK car insurance cheapest comprehensive deals comparison today',
-  home_insurance:'UK home insurance buildings contents cheapest deals today',
+  home_insurance: 'UK home insurance buildings contents cheapest deals today',
 }
 
 export async function POST(req: NextRequest) {
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Use Claude with web search to find real deals
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-latest',
       max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
       messages: [{

@@ -833,13 +833,23 @@ function MealsTab() {
 
   const generate = async () => {
     setGenerating(true)
-    await fetch('/api/meals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startDate: format(start, 'yyyy-MM-dd') }),
-    })
-    await load()
-    setGenerating(false)
+    try {
+      const res = await fetch('/api/meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: format(start, 'yyyy-MM-dd') }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Server error')
+      }
+      await load()
+    } catch (err: any) {
+      console.error('Generation failed:', err)
+      alert('Generation failed: ' + err.message)
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const days = Array.from({ length: 14 }, (_, i) => addDays(start, i))
