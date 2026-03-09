@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,17 +27,18 @@ When asked about deals, name the best provider and monthly saving.
 When asked about chores, be specific about what's overdue and who should do it.
 When asked to plan meals, suggest 3-5 specific quick recipes by name.`
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
-      max_tokens: 1000,
-      system,
-      messages: messages.map((m: any) => ({
-        role: m.role === 'ai' ? 'assistant' : 'user',
-        content: m.text,
+    const chat = model.startChat({
+      history: messages.slice(0, -1).map((m: any) => ({
+        role: m.role === 'ai' ? 'model' : 'user',
+        parts: [{ text: m.text }],
       })),
+      systemInstruction: system,
     })
 
-    const text = response.content.find(b => b.type === 'text')?.text || 'Sorry, I had trouble responding.'
+    const userMsg = messages[messages.length - 1].text
+    const result = await chat.sendMessage(userMsg)
+    const text = result.response.text() || 'Sorry, I had trouble responding.'
+
     return NextResponse.json({ text })
   } catch (err: any) {
     console.error('AI route error:', err)

@@ -30,11 +30,11 @@
    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
    SUPABASE_SERVICE_ROLE_KEY=eyJ...
    NEXT_PUBLIC_HOUSEHOLD_ID=paste-uuid-from-step-1
-   ANTHROPIC_API_KEY=sk-ant-...
+   GOOGLE_API_KEY=your-gemini-api-key
    NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
    ```
 
-3. Get your **Anthropic API key** from console.anthropic.com
+3. Get your **Google Gemini API key** from [aistudio.google.com](https://aistudio.google.com/) (Free tier available)
 
 ---
 
@@ -70,7 +70,7 @@ In your Vercel project → **Settings → Environment Variables**, add all the s
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_HOUSEHOLD_ID`
-- `ANTHROPIC_API_KEY`
+- `GOOGLE_API_KEY`
 - `NEXT_PUBLIC_APP_URL` ← set this to your actual Vercel URL after first deploy
 - `CRON_SECRET` ← make up a random string e.g. `hearth-cron-abc123`
 
@@ -117,7 +117,7 @@ Both of you can do this — you'll both access the same Supabase data in real ti
 | **Chore learning** | Every "Mark Done" writes to `chore_completions`. A Postgres trigger auto-recalculates your actual average interval |
 | **Bill alerts** | Bills within 60 days trigger notifications, stored in `notifications` table |
 | **Deal searching** | Calls `/api/deals` → Claude uses web search to find real live deals → saved to `bill_deals` |
-| **Meal generation** | Calls `/api/meals` → Claude generates a 14-day plan → saved to `meal_plans` |
+| **Meal generation** | Calls `/api/meals` → Gemini generates a 14-day plan → saved to `meal_plans` |
 | **Daily Telegram** | Vercel Cron runs `/api/notify` every day at 8am → sends summary to your Telegram |
 | **Real-time sync** | Supabase Realtime subscription → any change on one device instantly updates the other |
 
@@ -157,6 +157,6 @@ hearth/
 
 **Chores not loading** → Check Supabase RLS policies were created (run the schema SQL again)
 
-**Deals not working** → Check `ANTHROPIC_API_KEY` is set and has credits
+**Deals not working** → Check `GOOGLE_API_KEY` is set in Vercel/local env
 
 **Telegram not sending** → Visit `api.telegram.org/bot[TOKEN]/getUpdates` and make sure you've sent at least one message to the bot first
