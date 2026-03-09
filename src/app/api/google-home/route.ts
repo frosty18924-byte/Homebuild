@@ -92,7 +92,7 @@ TODAY'S MEALS: ${todayMeals.map((m: any) => `${m.slot}: ${m.meal_name} (${m.prep
   `.trim()
 
   const response = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-latest',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 300,
     system: `You are Hearth, a household AI assistant being accessed via Google Home voice.
     

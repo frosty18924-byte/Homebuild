@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Use Claude with web search to find real deals
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-latest',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
       messages: [{
