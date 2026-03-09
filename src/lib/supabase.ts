@@ -56,6 +56,7 @@ export type Bill = {
   due_day_of_month: number | null
   renewal_date: string | null
   is_active: boolean
+  frequency: 'monthly' | 'annually'
 }
 
 export type BillDeal = {

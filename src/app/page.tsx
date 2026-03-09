@@ -225,8 +225,18 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 const pence = (p: number) => `£${(p / 100).toFixed(0)}`
 const penceFull = (p: number) => `£${(p / 100).toFixed(2)}`
-const penceAnn = (p: number, ann: boolean) => ann ? `£${((p * 12) / 100).toFixed(0)}` : `£${(p / 100).toFixed(0)}`
-const penceFullAnn = (p: number, ann: boolean) => ann ? `£${((p * 12) / 100).toFixed(2)}` : `£${(p / 100).toFixed(2)}`
+const penceAnn = (p: number, ann: boolean, freq: 'monthly' | 'annually' = 'monthly') => {
+  if (ann) {
+    return freq === 'annually' ? `£${(p / 100).toFixed(0)}` : `£${((p * 12) / 100).toFixed(0)}`
+  }
+  return freq === 'monthly' ? `£${(p / 100).toFixed(0)}` : `£${((p / 12) / 100).toFixed(0)}`
+}
+const penceFullAnn = (p: number, ann: boolean, freq: 'monthly' | 'annually' = 'monthly') => {
+  if (ann) {
+    return freq === 'annually' ? `£${(p / 100).toFixed(2)}` : `£${((p * 12) / 100).toFixed(2)}`
+  }
+  return freq === 'monthly' ? `£${(p / 100).toFixed(2)}` : `£${((p / 12) / 100).toFixed(2)}`
+}
 
 const SUGGS = [
   "What's overdue this week?",
@@ -485,7 +495,7 @@ function ChoresTab({ chores, loading, onMarkDone, onAdd, onEdit, onDelete, nameA
 
 // ─── MODAL: Add Bill ──────────────────────────────────────────────────────────
 function AddBillModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any) => Promise<void> }) {
-  const [form, setForm] = useState({ name: '', icon: '💰', color: '#C1714F', provider: '', bill_type: 'other', amount_pence: 0, due_day_of_month: 1, renewal_date: '' })
+  const [form, setForm] = useState({ name: '', icon: '💰', color: '#C1714F', provider: '', bill_type: 'other', amount_pence: 0, due_day_of_month: 1, renewal_date: '', frequency: 'monthly' as 'monthly' | 'annually' })
   const [saving, setSaving] = useState(false)
   const TYPES = ['mortgage', 'energy', 'broadband', 'car_insurance', 'home_insurance', 'council', 'other']
   const ICONS = ['💰', '🏡', '⚡', '📡', '🚗', '🔒', '🏛️', '📺', '💧', '🌐']
@@ -525,17 +535,26 @@ function AddBillModal({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any)
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Monthly amount (£)</label>
+            <label className="form-label">Payment Amount (£)</label>
             <input type="number" className="form-input" placeholder="0.00" step="0.01" value={form.amount_pence || ''} onChange={e => setForm({ ...form, amount_pence: +e.target.value })} />
           </div>
+          <div className="form-group">
+            <label className="form-label">Frequency</label>
+            <select className="form-input" value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value as any })}>
+              <option value="monthly">Monthly</option>
+              <option value="annually">Annually</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
           <div className="form-group">
             <label className="form-label">Payment day of month</label>
             <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e => setForm({ ...form, due_day_of_month: +e.target.value })} />
           </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Renewal date (optional)</label>
-          <input type="date" className="form-input" value={form.renewal_date} onChange={e => setForm({ ...form, renewal_date: e.target.value })} />
+          <div className="form-group">
+            <label className="form-label">Renewal date (optional)</label>
+            <input type="date" className="form-input" value={form.renewal_date} onChange={e => setForm({ ...form, renewal_date: e.target.value })} />
+          </div>
         </div>
         <div className="modal-actions">
           <button className="btn-out" onClick={onClose}>Cancel</button>
@@ -556,6 +575,7 @@ function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => v
     amount_pounds: (bill.amount_pence / 100).toFixed(2),
     due_day_of_month: bill.due_day_of_month || 1,
     renewal_date: bill.renewal_date ? bill.renewal_date.split('T')[0] : '',
+    frequency: bill.frequency || 'monthly',
   })
   const [saving, setSaving] = useState(false)
   const TYPES = ['mortgage', 'energy', 'broadband', 'car_insurance', 'home_insurance', 'council', 'other']
@@ -570,6 +590,7 @@ function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => v
       amount_pence: Math.round(parseFloat(form.amount_pounds) * 100),
       due_day_of_month: form.due_day_of_month,
       renewal_date: form.renewal_date || null,
+      frequency: form.frequency,
     })
     onClose()
   }
@@ -603,17 +624,26 @@ function EditBillModal({ bill, onClose, onSave }: { bill: Bill; onClose: () => v
         </div>
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Monthly amount (£)</label>
+            <label className="form-label">Payment amount (£)</label>
             <input type="number" className="form-input" step="0.01" value={form.amount_pounds} onChange={e => setForm({ ...form, amount_pounds: e.target.value })} />
           </div>
+          <div className="form-group">
+            <label className="form-label">Frequency</label>
+            <select className="form-input" value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value as any })}>
+              <option value="monthly">Monthly</option>
+              <option value="annually">Annually</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
           <div className="form-group">
             <label className="form-label">Payment day of month</label>
             <input type="number" className="form-input" min={1} max={31} value={form.due_day_of_month} onChange={e => setForm({ ...form, due_day_of_month: +e.target.value })} />
           </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Renewal date</label>
-          <input type="date" className="form-input" value={form.renewal_date} onChange={e => setForm({ ...form, renewal_date: e.target.value })} />
+          <div className="form-group">
+            <label className="form-label">Renewal date</label>
+            <input type="date" className="form-input" value={form.renewal_date} onChange={e => setForm({ ...form, renewal_date: e.target.value })} />
+          </div>
         </div>
         <div className="modal-actions">
           <button className="btn-out" onClick={onClose}>Cancel</button>
@@ -707,7 +737,12 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                     )}
                   </div>
                   <div className="bill-right">
-                    <div className="bill-amt">{penceAnn(bill.amount_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}</div>
+                    <div className="bill-amt">
+                      {penceAnn(bill.amount_pence, isAnnual, bill.frequency)}
+                      <span style={{ fontSize: '.65rem', color: 'var(--grey)', textTransform: 'lowercase' }}>
+                        /{isAnnual ? 'yr' : 'mo'}
+                      </span>
+                    </div>
                     {daysTilDue !== null && (
                       <div className="bill-due" style={{ color: Math.abs(daysTilDue) <= 3 ? 'var(--terra)' : 'var(--grey)' }}>
                         {daysTilDue >= 0 ? `Due in ${daysTilDue}d` : `${Math.abs(daysTilDue)}d ago`}
@@ -730,7 +765,7 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                 {isExpanded && (
                   <div className="bill-expand">
                     <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--charcoal)', marginBottom: '.5rem' }}>
-                      💡 AI-searched deals — ranked by savings vs your current {penceFullAnn(bill.amount_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}:
+                      💡 AI-searched deals — ranked by savings vs your current {penceFullAnn(bill.amount_pence, isAnnual, bill.frequency)}/{isAnnual ? 'yr' : 'mo'}:
                     </div>
                     {searching[bill.id] ? (
                       <div className="searching-state">
@@ -742,8 +777,8 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                         {deals[bill.id].map((deal, i) => (
                           <div key={i} className="deal-card">
                             <div className="deal-provider">{deal.provider}</div>
-                            <div className="deal-price">{penceAnn(deal.monthly_amount_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}</div>
-                            <div className="deal-saving">💚 Save {penceAnn(deal.saving_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}</div>
+                            <div className="deal-price">{penceAnn(deal.monthly_amount_pence, isAnnual, 'monthly')}/{isAnnual ? 'yr' : 'mo'}</div>
+                            <div className="deal-saving">💚 Save {penceAnn(deal.saving_pence, isAnnual, 'monthly')}/{isAnnual ? 'yr' : 'mo'}</div>
                             <div className="deal-detail">{deal.detail}</div>
                             {deal.url && <button className="deal-cta" onClick={() => window.open(deal.url!, '_blank')}>View deal →</button>}
                           </div>
@@ -970,7 +1005,9 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
       learnedFreq: effectiveFreq(c), confidence: c.confidence_pct,
     })),
     bills: bills.map(b => ({
-      name: b.name, provider: b.provider, amount: penceFull(b.amount_pence),
+      name: b.name, provider: b.provider,
+      amount: penceFull(b.amount_pence),
+      frequency: b.frequency || 'monthly',
       renewalDate: b.renewal_date, daysUntilRenewal: b.renewal_date
         ? Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000) : null,
     })),
