@@ -68,12 +68,21 @@ Ingredients must be available at ASDA/ALDI.`
       }],
     })
 
-    const toolCall = response.content.find(b => b.type === 'tool_use')
-    if (!toolCall || toolCall.type !== 'tool_use') {
+    const toolCall = response.content.find(b => b.type === 'tool_use') as any
+    if (!toolCall) {
+      console.error('AI response content:', JSON.stringify(response.content, null, 2))
       throw new Error('AI failed to call the save_meal_plan tool')
     }
 
-    const { meals } = toolCall.input as { meals: any[] }
+    const { meals } = toolCall.input || {}
+
+    if (!meals || !Array.isArray(meals)) {
+      console.error('Tool call input missing meals array:', JSON.stringify(toolCall.input, null, 2))
+      if (response.stop_reason === 'max_tokens') {
+        throw new Error('Meal plan is too detailed and was cut off. I will try a more concise version.')
+      }
+      throw new Error('AI called the tool but did not provide the meal list correctly.')
+    }
 
     // Upsert to Supabase
     const rows = meals.map((m: any) => ({
