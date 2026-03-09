@@ -14,13 +14,16 @@ export async function POST(req: NextRequest) {
     const { startDate } = await req.json()
     const start = new Date(startDate)
 
+    // 7 days is more reliable for Claude 4.6 and better for fresh shopping
+    const daysToPlan = 7
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
+      max_tokens: 4000,
       tools: [
         {
           name: 'save_meal_plan',
-          description: 'Save a 14-day meal plan (28 entries) to the database.',
+          description: 'Save a 7-day meal plan (skipping Thursday dinner and Sundays) to the database.',
           input_schema: {
             type: 'object',
             properties: {
@@ -58,30 +61,31 @@ export async function POST(req: NextRequest) {
         }
       ],
       tool_choice: { type: 'tool', name: 'save_meal_plan' },
-      system: "You are a meal planning expert. Your only job is to generate a 14-day meal plan and call the 'save_meal_plan' tool with the full data. Do not provide any conversational text before or after the tool call.",
+      system: `You are a meal planning expert.
+EXCLUSIONS:
+- DO NOT plan a dinner for any Thursday.
+- DO NOT plan any meals for Sundays.
+Your only job is to generate a ${daysToPlan}-day plan and call 'save_meal_plan'.`,
       messages: [{
         role: 'user',
-        content: `Create a 14-day meal plan for a UK couple starting ${format(start, 'yyyy-MM-dd')}. 
-Include exactly 28 entries (1 lunch and 1 dinner per day). 
-Mix of quick weeknight meals and slightly longer weekend meals inspired by HelloFresh/Green Chef. 
-Ingredients must be available at ASDA/ALDI.`
+        content: `Create a ${daysToPlan}-day meal plan for a UK couple starting ${format(start, 'yyyy-MM-dd')}. 
+Include 1 lunch and 1 dinner per day, EXCEPT Thursday dinner and all of Sunday.
+Mix of quick ideas and HelloFresh/Green Chef style recipes.
+Ingredients from ASDA/ALDI.`
       }],
     })
 
     const toolCall = response.content.find(b => b.type === 'tool_use') as any
-    if (!toolCall) {
+    if (!toolCall || typeof toolCall.input !== 'object') {
       console.error('AI response content:', JSON.stringify(response.content, null, 2))
-      throw new Error('AI failed to call the save_meal_plan tool')
+      throw new Error('Hearth had trouble formatting the meals. Please try again.')
     }
 
-    const { meals } = toolCall.input || {}
+    const { meals } = toolCall.input
 
     if (!meals || !Array.isArray(meals)) {
-      console.error('Tool call input missing meals array:', JSON.stringify(toolCall.input, null, 2))
-      if (response.stop_reason === 'max_tokens') {
-        throw new Error('Meal plan is too detailed and was cut off. I will try a more concise version.')
-      }
-      throw new Error('AI called the tool but did not provide the meal list correctly.')
+      console.error('Tool call input missing meals array:', toolCall.input)
+      throw new Error('The AI generate a plan but it was incomplete. Let\'s try again.')
     }
 
     // Upsert to Supabase
