@@ -38,8 +38,7 @@ Return ONLY a JSON array (no markdown) with 28 entries (14 lunches + 14 dinners)
     "source": "hf",
     "recipe": "Step 1: ... Step 2: ...",
     "ingredients": [
-      { "item": "Chicken Breast", "amount": "500g" },
-      { "item": Soy Sauce", "amount": "2 tbsp" }
+      { "item": "Soy Sauce", "amount": "2 tbsp" }
     ],
     "shopping_tips": "Buy the large pack of chicken at Aldi for best price. Bulk cook this for 2 days."
   }
