@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       tools: [
         {
           name: 'save_meal_plan',
-          description: 'Save a 7-day meal plan (skipping Thursday dinner and Sundays) to the database.',
+          description: 'Save a 7-day meal plan with specific exclusions.',
           input_schema: {
             type: 'object',
             properties: {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
                   properties: {
                     plan_date: { type: 'string', description: 'YYYY-MM-DD' },
                     slot: { type: 'string', enum: ['lunch', 'dinner'] },
-                    meal_name: { type: 'string' },
+                    meal_name: { type: 'string', description: 'Include "Bulk for X days" in name for lunches' },
                     meal_tag: { type: 'string', enum: ['quick', 'hf', 'gc'] },
                     prep_time_mins: { type: 'number' },
                     source: { type: 'string', nullable: true },
@@ -45,9 +45,10 @@ export async function POST(req: NextRequest) {
                         type: 'object',
                         properties: {
                           item: { type: 'string' },
-                          amount: { type: 'string' }
+                          amount: { type: 'string' },
+                          store: { type: 'string', enum: ['ASDA', 'ALDI', 'Either'] }
                         },
-                        required: ['item', 'amount']
+                        required: ['item', 'amount', 'store']
                       }
                     },
                     shopping_tips: { type: 'string' }
@@ -61,18 +62,21 @@ export async function POST(req: NextRequest) {
         }
       ],
       tool_choice: { type: 'tool', name: 'save_meal_plan' },
-      system: `You are a meal planning expert.
-EXCLUSIONS:
-- DO NOT plan a dinner for any Thursday.
-- DO NOT plan any meals for Sundays.
-- Keep recipes concise to ensure the entire 7-day plan fits.
-Your only job is to generate a ${daysToPlan}-day plan and call 'save_meal_plan'.`,
+      system: `You are a meal planning expert for a UK couple.
+STRICT SCHEDULE RULES:
+1. THURSDAY: Generate LUNCH. Leave DINNER blank/do not generate it.
+2. SUNDAY: DO NOT generate anything for Sunday (No lunch, no dinner).
+3. FRIDAY/SATURDAY: Generate both LUNCH and DINNER.
+4. LUNCHES: Must be "Bulk Lunches" found online (e.g. meal prep). Include "Bulk for X days" in the meal_name.
+5. DINNERS: Must be quick and easy meals.
+6. STORES: For EVERY ingredient, specify if it should be bought from ASDA or ALDI.`,
       messages: [{
         role: 'user',
-        content: `Create a ${daysToPlan}-day meal plan for a UK couple starting ${format(start, 'yyyy-MM-dd')}. 
-Include 1 lunch and 1 dinner per day, EXCEPT Thursday dinner and all of Sunday.
-Mix of quick ideas and HelloFresh/Green Chef style recipes.
-Ingredients from ASDA/ALDI.`
+        content: `Create a ${daysToPlan}-day meal plan starting ${format(start, 'yyyy-MM-dd')}.
+Follow the schedule rules exactly: Skip Thu Dinner and all of Sunday.
+Lunches = Bulk meal prep ideas.
+Dinners = Quick & Easy.
+Ingredients = All from ASDA/ALDI with store assignment.`
       }],
     })
 
@@ -92,6 +96,11 @@ Ingredients from ASDA/ALDI.`
     // Upsert to Supabase
     const rows = meals.map((m: any) => ({
       ...m,
+      // Store the 'store' info in the ingredient item string for the UI
+      ingredients: m.ingredients.map((i: any) => ({
+        item: `${i.item} (${i.store})`,
+        amount: i.amount
+      })),
       household_id: process.env.NEXT_PUBLIC_HOUSEHOLD_ID,
     }))
 
