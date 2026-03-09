@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { choreStatus, daysUntilDue, effectiveFreq, nextDueDate } from '@/lib/supabase'
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -74,7 +73,7 @@ async function markChoreDoneByName(choreName: string) {
   return match.name
 }
 
-// ─── Build spoken response via Gemini ────────────────────────────────────────
+// ─── Build spoken response via Claude ────────────────────────────────────────
 async function buildVoiceResponse(intent: string, query: string, homeData: any): Promise<string> {
   const { chores, bills, todayMeals } = homeData
 
@@ -92,7 +91,10 @@ BILLS RENEWING SOON: ${urgentBills.map((b: any) => `${b.name} in ${Math.round((n
 TODAY'S MEALS: ${todayMeals.map((m: any) => `${m.slot}: ${m.meal_name} (${m.prep_time_mins} mins)`).join(', ') || 'not planned yet'}
   `.trim()
 
-  const systemPrompt = `You are Hearth, a household AI assistant being accessed via Google Home voice.
+  const response = await anthropic.messages.create({
+    model: 'claude-3-5-sonnet-latest',
+    max_tokens: 300,
+    system: `You are Hearth, a household AI assistant being accessed via Google Home voice.
     
 CRITICAL RULES FOR VOICE:
 - Respond in PLAIN SPOKEN English only — no bullet points, no markdown, no lists
@@ -103,14 +105,11 @@ CRITICAL RULES FOR VOICE:
 - Today is ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
 
 HOME DATA:
-${context}`
-
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: query }] }],
-    systemInstruction: systemPrompt,
+${context}`,
+    messages: [{ role: 'user', content: query }],
   })
 
-  return result.response.text() || "Sorry, I couldn't get that information right now."
+  return response.content.find(b => b.type === 'text')?.text || "Sorry, I couldn't get that information right now."
 }
 
 // ─── Main webhook handler ─────────────────────────────────────────────────────

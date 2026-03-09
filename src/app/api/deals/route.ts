@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
-// Use Gemini 2.0 Flash for search capabilities
-const model = genAI.getGenerativeModel({
-  model: 'gemini-2.0-flash',
-  tools: [{ googleSearch: {} } as any]
-})
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -28,7 +23,14 @@ export async function POST(req: NextRequest) {
     const searchQuery = DEAL_PROMPTS[billType] || `UK ${billType} best deals today`
     const currentMonthly = (monthlyAmountPence / 100).toFixed(2)
 
-    const prompt = `Search for: "${searchQuery}"
+    // Use Claude with web search to find real deals
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-latest',
+      max_tokens: 1500,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' } as any],
+      messages: [{
+        role: 'user',
+        content: `Search for: "${searchQuery}"
 
 Current situation: The household pays £${currentMonthly}/month with ${provider}.
 
@@ -50,9 +52,14 @@ Rules:
 - url should be the direct page for that deal or the provider's main site
 - detail max 60 characters
 - Sort by saving_pence descending`
+      }],
+    })
 
-    const result = await model.generateContent(prompt)
-    const textContent = result.response.text()
+    // Extract text from response (may include tool use blocks)
+    const textContent = response.content
+      .filter(b => b.type === 'text')
+      .map(b => (b as any).text)
+      .join('')
 
     // Parse JSON from response
     const jsonMatch = textContent.match(/\[[\s\S]*\]/)
