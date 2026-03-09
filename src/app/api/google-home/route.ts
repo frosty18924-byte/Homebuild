@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@supabase/supabase-js'
 import { choreStatus, daysUntilDue, effectiveFreq, nextDueDate } from '@/lib/supabase'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -35,8 +36,8 @@ async function getHomeData() {
     ...c,
     last_completed: c.chore_completions?.length
       ? c.chore_completions.sort((a: any, b: any) =>
-          new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
-        )[0].completed_at
+        new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+      )[0].completed_at
       : null,
     completions_count: c.chore_completions?.length || 0,
   }))
@@ -73,7 +74,7 @@ async function markChoreDoneByName(choreName: string) {
   return match.name
 }
 
-// ─── Build spoken response via Claude ────────────────────────────────────────
+// ─── Build spoken response via Gemini ────────────────────────────────────────
 async function buildVoiceResponse(intent: string, query: string, homeData: any): Promise<string> {
   const { chores, bills, todayMeals } = homeData
 
@@ -91,10 +92,7 @@ BILLS RENEWING SOON: ${urgentBills.map((b: any) => `${b.name} in ${Math.round((n
 TODAY'S MEALS: ${todayMeals.map((m: any) => `${m.slot}: ${m.meal_name} (${m.prep_time_mins} mins)`).join(', ') || 'not planned yet'}
   `.trim()
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 300,
-    system: `You are Hearth, a household AI assistant being accessed via Google Home voice.
+  const systemPrompt = `You are Hearth, a household AI assistant being accessed via Google Home voice.
     
 CRITICAL RULES FOR VOICE:
 - Respond in PLAIN SPOKEN English only — no bullet points, no markdown, no lists
@@ -105,11 +103,14 @@ CRITICAL RULES FOR VOICE:
 - Today is ${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
 
 HOME DATA:
-${context}`,
-    messages: [{ role: 'user', content: query }],
+${context}`
+
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: query }] }],
+    systemInstruction: systemPrompt,
   })
 
-  return response.content.find(b => b.type === 'text')?.text || "Sorry, I couldn't get that information right now."
+  return result.response.text() || "Sorry, I couldn't get that information right now."
 }
 
 // ─── Main webhook handler ─────────────────────────────────────────────────────
@@ -121,9 +122,9 @@ export async function POST(req: NextRequest) {
     const handler = body?.handler?.name || ''
     const intent = body?.intent?.name || ''
     const query = body?.scene?.slots?.query?.value ||
-                  body?.intent?.params?.query?.resolved ||
-                  body?.session?.params?.query ||
-                  ''
+      body?.intent?.params?.query?.resolved ||
+      body?.session?.params?.query ||
+      ''
 
     // Extract spoken text from various Google Actions formats
     const spokenText = body?.intent?.query || query || handler
