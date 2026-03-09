@@ -16,7 +16,15 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 8000,
+      system: `You are a meal planning expert. 
+CRITICAL RULE: Return ONLY a valid JSON array. 
+- No markdown formatting.
+- No conversational text.
+- STRICT JSON: Every string MUST be enclosed in double quotes. 
+- ESCAPING: If you use a double quote inside a string (e.g. for "HelloFresh"), you MUST escape it with a backslash (\\").
+- NO TRAILING COMMAS in arrays or objects.
+- Ensure all 28 entries (14 days, 2 slots each) are included.`,
       messages: [{
         role: 'user',
         content: `Create a 14-day meal plan for a UK couple. Mix of quick weeknight meals and slightly longer weekend meals.
@@ -27,7 +35,6 @@ The user shops at ASDA and ALDI, so ensure ingredients are easily available ther
 Focus on "quick, easy, and healthy" recipes.
 Include tips for bulk buying/bulk cooking to keep it cheap.
 
-Return ONLY a JSON array (no markdown) with 28 entries (14 lunches + 14 dinners):
 [
   {
     "plan_date": "YYYY-MM-DD",
@@ -38,17 +45,16 @@ Return ONLY a JSON array (no markdown) with 28 entries (14 lunches + 14 dinners)
     "source": "hf",
     "recipe": "Step 1: ... Step 2: ...",
     "ingredients": [
-      { "item": "Soy Sauce", "amount": "2 tbsp" }
+      { "item": "Ingredient", "amount": "quantity" }
     ],
-    "shopping_tips": "Buy the large pack of chicken at Aldi for best price. Bulk cook this for 2 days."
+    "shopping_tips": "..."
   }
 ]
 
 meal_tag options: "quick" (under 25 mins), "hf" (HelloFresh style), "gc" (Green Chef style)
 source options: "hf", "gc", or null
 plan_date starts: ${format(start, 'yyyy-MM-dd')} through ${format(addDays(start, 13), 'yyyy-MM-dd')}
-Each date must have exactly one lunch and one dinner.
-Variety is key — no meal repeated in the same week.`
+Each date must have exactly one lunch and one dinner (28 entries total).`
       }],
     })
 
