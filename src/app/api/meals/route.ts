@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 8000,
       tools: [
         {
           name: 'save_meal_plan',
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
 EXCLUSIONS:
 - DO NOT plan a dinner for any Thursday.
 - DO NOT plan any meals for Sundays.
+- Keep recipes concise to ensure the entire 7-day plan fits.
 Your only job is to generate a ${daysToPlan}-day plan and call 'save_meal_plan'.`,
       messages: [{
         role: 'user',
@@ -78,14 +79,14 @@ Ingredients from ASDA/ALDI.`
     const toolCall = response.content.find(b => b.type === 'tool_use') as any
     if (!toolCall || typeof toolCall.input !== 'object') {
       console.error('AI response content:', JSON.stringify(response.content, null, 2))
-      throw new Error('Hearth had trouble formatting the meals. Please try again.')
+      throw new Error(`Hearth had trouble formatting. Reason: ${response.stop_reason}`)
     }
 
     const { meals } = toolCall.input
 
     if (!meals || !Array.isArray(meals)) {
-      console.error('Tool call input missing meals array:', toolCall.input)
-      throw new Error('The AI generate a plan but it was incomplete. Let\'s try again.')
+      console.error('Tool call input:', JSON.stringify(toolCall.input))
+      throw new Error(`Incomplete plan. Received: ${Object.keys(toolCall.input || {}).join(', ')}`)
     }
 
     // Upsert to Supabase
