@@ -17,52 +17,63 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
-      system: `You are a meal planning expert. 
-CRITICAL RULE: Return ONLY a valid JSON array. 
-- No markdown formatting.
-- No conversational text.
-- STRICT JSON: Every string MUST be enclosed in double quotes. 
-- ESCAPING: If you use a double quote inside a string (e.g. for "HelloFresh"), you MUST escape it with a backslash (\\").
-- NO TRAILING COMMAS in arrays or objects.
-- Ensure all 28 entries (14 days, 2 slots each) are included.`,
+      tools: [
+        {
+          name: 'save_meal_plan',
+          description: 'Save a 14-day meal plan (28 entries) to the database.',
+          input_schema: {
+            type: 'object',
+            properties: {
+              meals: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    plan_date: { type: 'string', description: 'YYYY-MM-DD' },
+                    slot: { type: 'string', enum: ['lunch', 'dinner'] },
+                    meal_name: { type: 'string' },
+                    meal_tag: { type: 'string', enum: ['quick', 'hf', 'gc'] },
+                    prep_time_mins: { type: 'number' },
+                    source: { type: 'string', nullable: true },
+                    recipe: { type: 'string' },
+                    ingredients: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          item: { type: 'string' },
+                          amount: { type: 'string' }
+                        },
+                        required: ['item', 'amount']
+                      }
+                    },
+                    shopping_tips: { type: 'string' }
+                  },
+                  required: ['plan_date', 'slot', 'meal_name', 'meal_tag', 'prep_time_mins', 'recipe', 'ingredients', 'shopping_tips']
+                }
+              }
+            },
+            required: ['meals']
+          }
+        }
+      ],
+      tool_choice: { type: 'tool', name: 'save_meal_plan' },
+      system: "You are a meal planning expert. Your only job is to generate a 14-day meal plan and call the 'save_meal_plan' tool with the full data. Do not provide any conversational text before or after the tool call.",
       messages: [{
         role: 'user',
-        content: `Create a 14-day meal plan for a UK couple. Mix of quick weeknight meals and slightly longer weekend meals.
-        
-Inspired by HelloFresh and Green Chef but also original quick ideas.
-Prioritise meals under 30 minutes on weekdays.
-The user shops at ASDA and ALDI, so ensure ingredients are easily available there.
-Focus on "quick, easy, and healthy" recipes.
-Include tips for bulk buying/bulk cooking to keep it cheap.
-
-[
-  {
-    "plan_date": "YYYY-MM-DD",
-    "slot": "lunch",
-    "meal_name": "Meal Name",
-    "meal_tag": "quick",
-    "prep_time_mins": 15,
-    "source": "hf",
-    "recipe": "Step 1: ... Step 2: ...",
-    "ingredients": [
-      { "item": "Ingredient", "amount": "quantity" }
-    ],
-    "shopping_tips": "..."
-  }
-]
-
-meal_tag options: "quick" (under 25 mins), "hf" (HelloFresh style), "gc" (Green Chef style)
-source options: "hf", "gc", or null
-plan_date starts: ${format(start, 'yyyy-MM-dd')} through ${format(addDays(start, 13), 'yyyy-MM-dd')}
-Each date must have exactly one lunch and one dinner (28 entries total).`
+        content: `Create a 14-day meal plan for a UK couple starting ${format(start, 'yyyy-MM-dd')}. 
+Include exactly 28 entries (1 lunch and 1 dinner per day). 
+Mix of quick weeknight meals and slightly longer weekend meals inspired by HelloFresh/Green Chef. 
+Ingredients must be available at ASDA/ALDI.`
       }],
     })
 
-    const text = response.content.find(b => b.type === 'text')?.text || ''
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) throw new Error('No JSON in response')
+    const toolCall = response.content.find(b => b.type === 'tool_use')
+    if (!toolCall || toolCall.type !== 'tool_use') {
+      throw new Error('AI failed to call the save_meal_plan tool')
+    }
 
-    const meals = JSON.parse(jsonMatch[0])
+    const { meals } = toolCall.input as { meals: any[] }
 
     // Upsert to Supabase
     const rows = meals.map((m: any) => ({
