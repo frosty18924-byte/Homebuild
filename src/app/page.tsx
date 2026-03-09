@@ -225,6 +225,8 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 const pence = (p: number) => `£${(p / 100).toFixed(0)}`
 const penceFull = (p: number) => `£${(p / 100).toFixed(2)}`
+const penceAnn = (p: number, ann: boolean) => ann ? `£${((p * 12) / 100).toFixed(0)}` : `£${(p / 100).toFixed(0)}`
+const penceFullAnn = (p: number, ann: boolean) => ann ? `£${((p * 12) / 100).toFixed(2)}` : `£${(p / 100).toFixed(2)}`
 
 const SUGGS = [
   "What's overdue this week?",
@@ -629,6 +631,7 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
   const [deals, setDeals] = useState<Record<string, BillDeal[]>>({})
   const [editBill, setEditBill] = useState<Bill | null>(null)
   const [showAddBill, setShowAddBill] = useState(false)
+  const [isAnnual, setIsAnnual] = useState(false)
 
   const searchDeals = async (bill: Bill) => {
     if (searching[bill.id]) return
@@ -663,7 +666,12 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
           <h2 className="section-title">Bills & <span>Deals</span></h2>
           <p className="section-sub">Auto-alerts 60 days out · AI searches live deals · data from Supabase</p>
         </div>
-        <button className="btn-out" onClick={() => setShowAddBill(true)}>+ Add Bill</button>
+        <div style={{ display: 'flex', gap: '.8rem', alignItems: 'center' }}>
+          <button className={`tg-badge ${isAnnual ? 'tg-on' : 'tg-off'}`} onClick={() => setIsAnnual(!isAnnual)}>
+            {isAnnual ? '📅 Annual View' : '🗓️ Monthly View'}
+          </button>
+          <button className="btn-out" onClick={() => setShowAddBill(true)}>+ Add Bill</button>
+        </div>
       </div>
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
@@ -699,7 +707,7 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                     )}
                   </div>
                   <div className="bill-right">
-                    <div className="bill-amt">{pence(bill.amount_pence)}/mo</div>
+                    <div className="bill-amt">{penceAnn(bill.amount_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}</div>
                     {daysTilDue !== null && (
                       <div className="bill-due" style={{ color: Math.abs(daysTilDue) <= 3 ? 'var(--terra)' : 'var(--grey)' }}>
                         {daysTilDue >= 0 ? `Due in ${daysTilDue}d` : `${Math.abs(daysTilDue)}d ago`}
@@ -722,7 +730,7 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                 {isExpanded && (
                   <div className="bill-expand">
                     <div style={{ fontSize: '.8rem', fontWeight: '700', color: 'var(--charcoal)', marginBottom: '.5rem' }}>
-                      💡 AI-searched deals — ranked by savings vs your current {penceFull(bill.amount_pence)}/mo:
+                      💡 AI-searched deals — ranked by savings vs your current {penceFullAnn(bill.amount_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}:
                     </div>
                     {searching[bill.id] ? (
                       <div className="searching-state">
@@ -734,8 +742,8 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                         {deals[bill.id].map((deal, i) => (
                           <div key={i} className="deal-card">
                             <div className="deal-provider">{deal.provider}</div>
-                            <div className="deal-price">{pence(deal.monthly_amount_pence)}/mo</div>
-                            <div className="deal-saving">💚 Save {pence(deal.saving_pence)}/mo</div>
+                            <div className="deal-price">{penceAnn(deal.monthly_amount_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}</div>
+                            <div className="deal-saving">💚 Save {penceAnn(deal.saving_pence, isAnnual)}/{isAnnual ? 'yr' : 'mo'}</div>
                             <div className="deal-detail">{deal.detail}</div>
                             {deal.url && <button className="deal-cta" onClick={() => window.open(deal.url!, '_blank')}>View deal →</button>}
                           </div>
