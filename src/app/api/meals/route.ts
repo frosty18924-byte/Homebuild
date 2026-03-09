@@ -20,9 +20,12 @@ export async function POST(req: NextRequest) {
       messages: [{
         role: 'user',
         content: `Create a 14-day meal plan for a UK couple. Mix of quick weeknight meals and slightly longer weekend meals.
-
+        
 Inspired by HelloFresh and Green Chef but also original quick ideas.
 Prioritise meals under 30 minutes on weekdays.
+The user shops at ASDA and ALDI, so ensure ingredients are easily available there.
+Focus on "quick, easy, and healthy" recipes.
+Include tips for bulk buying/bulk cooking to keep it cheap.
 
 Return ONLY a JSON array (no markdown) with 28 entries (14 lunches + 14 dinners):
 [
@@ -32,7 +35,13 @@ Return ONLY a JSON array (no markdown) with 28 entries (14 lunches + 14 dinners)
     "meal_name": "Meal Name",
     "meal_tag": "quick",
     "prep_time_mins": 15,
-    "source": "hf"
+    "source": "hf",
+    "recipe": "Step 1: ... Step 2: ...",
+    "ingredients": [
+      { "item": "Chicken Breast", "amount": "500g" },
+      { "item": "Soy Sauce", "amount": "2 tbsp" }
+    ],
+    "shopping_tips": "Buy the large pack of chicken at Aldi for best price. Bulk cook this for 2 days."
   }
 ]
 

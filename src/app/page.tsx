@@ -757,12 +757,67 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
   )
 }
 
+// ─── MODAL: Meal Recipe ──────────────────────────────────────────────────────
+function MealRecipeModal({ meal, onClose }: { meal: MealPlan; onClose: () => void }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+          <div>
+            <div className="meal-slot-lbl" style={{ marginBottom: '.2rem' }}>{meal.slot} · {format(new Date(meal.plan_date), 'EEEE d MMM')}</div>
+            <div className="modal-title" style={{ marginBottom: 0 }}>{meal.meal_name}</div>
+          </div>
+          <button className="btn-out" onClick={onClose} style={{ padding: '.3rem .6rem' }}>✕</button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div>
+            <div className="form-label" style={{ color: 'var(--terra)', fontWeight: '700' }}>Ingredients</div>
+            <ul style={{ listStyle: 'none', padding: 0, marginTop: '.5rem' }}>
+              {meal.ingredients?.map((ing, i) => (
+                <li key={i} style={{ fontSize: '.85rem', padding: '.3rem 0', borderBottom: '1px solid rgba(193,113,79,.05)', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{ing.item}</span>
+                  <span style={{ color: 'var(--grey)' }}>{ing.amount}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="form-label" style={{ color: 'var(--terra)', fontWeight: '700' }}>Prep & Info</div>
+            <div style={{ marginTop: '.5rem' }}>
+              <div style={{ fontSize: '.85rem', marginBottom: '.8rem' }}>
+                <strong>⏱️ Prep Time:</strong> {meal.prep_time_mins} mins
+              </div>
+              {meal.shopping_tips && (
+                <div style={{ background: 'rgba(196,150,42,0.1)', padding: '.8rem', borderRadius: '10px', fontSize: '.8rem', border: '1px solid rgba(196,150,42,0.2)' }}>
+                  <strong>🛒 Shopping Tips (Asda/Aldi):</strong><br />
+                  <div style={{ marginTop: '.3rem', lineHeight: '1.4' }}>{meal.shopping_tips}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="form-label" style={{ color: 'var(--terra)', fontWeight: '700' }}>Method</div>
+        <div style={{ fontSize: '.9rem', lineHeight: '1.6', marginTop: '.5rem', whiteSpace: 'pre-wrap', background: 'var(--linen)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(193,113,79,0.1)' }}>
+          {meal.recipe || "Recipe details not available for this meal."}
+        </div>
+
+        <div className="modal-actions">
+          <button className="btn-solid" style={{ width: '100%' }} onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── MEALS TAB ────────────────────────────────────────────────────────────────
 function MealsTab() {
   const [meals, setMeals] = useState<MealPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [week, setWeek] = useState(0)
+  const [selectedMeal, setSelectedMeal] = useState<MealPlan | null>(null)
   const start = startOfToday()
 
   const load = async () => {
@@ -846,7 +901,12 @@ function MealsTab() {
                   <div className="meal-day-date">{fmt(day)}</div>
                 </div>
                 {[['lunch', 'Lunch', lunch], ['dinner', 'Dinner', dinner]].map(([slot, label, meal]) => (
-                  <div key={slot as string} className="meal-slot">
+                  <div key={slot as string} className="meal-slot"
+                    onClick={() => meal && setSelectedMeal(meal as MealPlan)}
+                    style={{ cursor: meal ? 'pointer' : 'default', transition: 'background 0.1s' }}
+                    onMouseEnter={e => meal && (e.currentTarget.style.background = 'rgba(193,113,79,0.05)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
                     <div className="meal-slot-lbl">{label as string}</div>
                     {meal ? (
                       <>
@@ -863,6 +923,7 @@ function MealsTab() {
           })}
         </div>
       )}
+      {selectedMeal && <MealRecipeModal meal={selectedMeal} onClose={() => setSelectedMeal(null)} />}
     </div>
   )
 }

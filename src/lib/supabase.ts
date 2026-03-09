@@ -79,6 +79,9 @@ export type MealPlan = {
   meal_tag: string
   prep_time_mins: number
   source: string | null
+  recipe: string | null
+  ingredients: { item: string; amount: string }[] | null
+  shopping_tips: string | null
 }
 
 export type Notification = {
@@ -124,8 +127,8 @@ export async function getChores() {
     ...c,
     last_completed: c.chore_completions?.length
       ? c.chore_completions.sort((a: any, b: any) =>
-          new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
-        )[0].completed_at
+        new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+      )[0].completed_at
       : null,
     completions_count: c.chore_completions?.length || 0,
     chore_completions: c.chore_completions || [],
