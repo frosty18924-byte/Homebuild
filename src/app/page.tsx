@@ -15,208 +15,18 @@ import { format, addDays, startOfToday } from 'date-fns'
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap');
-:root{--cream:#F5F0E8;--linen:#EDE5D8;--warm-white:#FAF7F2;--terra:#C1714F;--terra-l:#D4896A;--terra-d:#A05A3A;--sage:#7A9E7E;--sage-l:#A8C5AB;--rose:#C4877A;--charcoal:#3D3530;--grey:#8A7E78;--gold:#C4962A;--gold-l:#E8B84B}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)}
-.app{min-height:100vh;background:var(--cream);background-image:radial-gradient(ellipse at 15% 0%,rgba(193,113,79,.07) 0%,transparent 55%),radial-gradient(ellipse at 85% 100%,rgba(122,158,126,.07) 0%,transparent 55%)}
-.hdr{background:var(--charcoal);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(61,53,48,.35)}
-.hdr-brand{display:flex;align-items:center;gap:.7rem}
-.hdr-ico{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--terra),var(--terra-l));display:flex;align-items:center;justify-content:center;font-size:17px}
-.hdr-name{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--cream)}
-.hdr-sub{font-size:.65rem;color:var(--grey);letter-spacing:.08em;text-transform:uppercase}
-.hdr-right{display:flex;align-items:center;gap:.8rem}
-.hdr-date{text-align:right;color:var(--grey);font-size:.75rem}
-.hdr-date strong{display:block;color:var(--linen);font-size:.9rem;font-weight:300}
-.notif-btn{position:relative;width:34px;height:34px;border-radius:9px;border:1px solid rgba(245,240,232,.15);background:rgba(245,240,232,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:background .15s}
-.notif-btn:hover{background:rgba(245,240,232,.12)}
-.notif-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--terra);border:2px solid var(--charcoal)}
-.tg-badge{padding:.25rem .6rem;border-radius:20px;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:none;transition:all .15s;font-family:'Lato',sans-serif}
-.tg-on{background:rgba(122,158,126,.2);color:#A8C5AB}.tg-off{background:rgba(193,113,79,.2);color:var(--terra-l)}
-.nav{background:var(--warm-white);border-bottom:1px solid rgba(193,113,79,.13);display:flex;padding:0 1.5rem;overflow-x:auto}
-.nav-btn{padding:.85rem 1.3rem;border:none;background:none;cursor:pointer;font-family:'Lato',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--grey);border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:.4rem;position:relative}
-.nav-btn:hover{color:var(--terra)}.nav-btn.active{color:var(--terra);border-bottom-color:var(--terra)}
-.nav-count{position:absolute;top:10px;right:6px;min-width:16px;height:16px;border-radius:8px;background:var(--terra);color:white;font-size:.6rem;display:flex;align-items:center;justify-content:center;padding:0 4px}
-.main{padding:1.5rem;max-width:1400px;margin:0 auto}
-.section-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
-.section-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--charcoal)}
-.section-title span{color:var(--terra);font-style:italic}
-.section-sub{font-size:.78rem;color:var(--grey);margin-top:.2rem}
-.btn-out{padding:.45rem 1rem;border-radius:9px;border:1px solid rgba(193,113,79,.3);background:transparent;color:var(--terra);font-size:.73rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .15s;font-family:'Lato',sans-serif}
-.btn-out:hover{background:var(--terra);color:white}
-.btn-out:disabled{opacity:.4;cursor:not-allowed}
-.btn-solid{padding:.45rem 1rem;border-radius:9px;border:none;background:var(--terra);color:white;font-size:.73rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .15s;font-family:'Lato',sans-serif}
-.btn-solid:hover{background:var(--terra-d)}
-.btn-solid:disabled{opacity:.4;cursor:not-allowed}
-.card{background:var(--warm-white);border-radius:16px;padding:1.4rem;border:1px solid rgba(193,113,79,.1);box-shadow:0 2px 12px rgba(61,53,48,.05)}
-.card-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--charcoal);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
-.greeting{background:linear-gradient(135deg,var(--charcoal) 0%,#5a4a42 100%);border-radius:18px;padding:1.8rem 2rem;color:var(--cream);position:relative;overflow:hidden;margin-bottom:1.5rem}
-.greeting::before{content:'';position:absolute;top:-50px;right:-50px;width:220px;height:220px;border-radius:50%;background:rgba(193,113,79,.12)}
-.greeting::after{content:'';position:absolute;bottom:-70px;left:35%;width:240px;height:240px;border-radius:50%;background:rgba(122,158,126,.09)}
-.gt{font-family:'Playfair Display',serif;font-size:1.9rem;position:relative;z-index:1}
-.gs{font-size:.82rem;color:rgba(245,240,232,.6);font-weight:300;position:relative;z-index:1;margin-top:.3rem}
-.gstats{display:flex;gap:2rem;margin-top:1.5rem;position:relative;z-index:1;flex-wrap:wrap}
-.gn{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--gold-l);line-height:1}
-.gl{font-size:.65rem;color:rgba(245,240,232,.55);text-transform:uppercase;letter-spacing:.08em;margin-top:.2rem}
-.ov-grid{display:grid;grid-template-columns:2fr 1fr;gap:1.2rem}
-@media(max-width:900px){.ov-grid{grid-template-columns:1fr}}
-.alerts-banner{background:linear-gradient(135deg,rgba(193,113,79,.1),rgba(196,150,42,.07));border:1px solid rgba(193,113,79,.18);border-radius:14px;padding:1rem 1.4rem;margin-bottom:1.2rem}
-.alert-item{display:flex;align-items:center;gap:.8rem;padding:.5rem 0;border-bottom:1px solid rgba(193,113,79,.1)}
-.alert-item:last-child{border-bottom:none}
-.alert-text{flex:1;font-size:.82rem}
-.alert-action{font-size:.7rem;padding:.25rem .7rem;border-radius:20px;background:var(--terra);color:white;border:none;cursor:pointer;font-weight:700;font-family:'Lato',sans-serif;white-space:nowrap}
-.filter-row{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap}
-.filter-btn{padding:.32rem .85rem;border-radius:20px;border:1px solid rgba(193,113,79,.18);background:white;font-size:.72rem;cursor:pointer;color:var(--grey);transition:all .15s;font-family:'Lato',sans-serif;font-weight:700;letter-spacing:.04em}
-.filter-btn.active{background:var(--terra);color:white;border-color:var(--terra)}
-.chores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1rem}
-.chore-card{background:var(--warm-white);border-radius:14px;padding:1.2rem;border:1px solid rgba(193,113,79,.08);border-left:4px solid var(--sage);transition:all .2s;position:relative}
-.chore-card:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(61,53,48,.1)}
-.chore-card.overdue{border-left-color:var(--terra)}
-.chore-card.due-soon{border-left-color:var(--gold)}
-.chore-card.done-flash{border-left-color:var(--sage);opacity:.6}
-.chore-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem}
-.chore-name{font-family:'Playfair Display',serif;font-size:.97rem}
-.badge{font-size:.62rem;padding:.18rem .55rem;border-radius:20px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;flex-shrink:0}
-.badge-overdue{background:rgba(193,113,79,.15);color:var(--terra)}
-.badge-soon{background:rgba(196,150,42,.15);color:var(--gold)}
-.badge-ok{background:rgba(122,158,126,.15);color:var(--sage)}
-.badge-done{background:rgba(122,158,126,.12);color:var(--sage)}
-.chore-meta{font-size:.73rem;color:var(--grey);margin-bottom:.5rem}
-.learn-bar{height:3px;background:rgba(193,113,79,.1);border-radius:2px;margin:.55rem 0;overflow:hidden}
-.learn-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--sage),var(--sage-l));transition:width .5s}
-.learn-lbl{font-size:.63rem;color:var(--grey);display:flex;justify-content:space-between}
-.learn-lbl span{color:var(--sage);font-weight:700}
-.assignees{display:flex;align-items:center;gap:.35rem;margin-bottom:.65rem}
-.av{width:20px;height:20px;border-radius:50%;background:var(--terra);display:flex;align-items:center;justify-content:center;font-size:.58rem;color:white;font-weight:700;flex-shrink:0}
-.av.b{background:var(--sage)}
-.av-lbl{font-size:.72rem;color:var(--grey)}
-.chore-actions{display:flex;gap:.5rem;margin-top:.7rem}
-.chore-btn{flex:1;padding:.45rem;border-radius:8px;border:1px solid rgba(193,113,79,.25);background:transparent;color:var(--terra);font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .15s;font-family:'Lato',sans-serif}
-.chore-btn:hover{background:var(--terra);color:white}
-.chore-btn:disabled{opacity:.4;cursor:not-allowed}
-.chore-btn.done-st{border-color:var(--sage);color:var(--sage)}
-.chore-btn.done-st:hover{background:var(--sage);color:white}
-.add-card{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:1.2rem;border-radius:14px;border:2px dashed rgba(193,113,79,.22);background:transparent;color:var(--grey);font-size:.8rem;cursor:pointer;transition:all .2s;font-family:'Lato',sans-serif;font-weight:700;letter-spacing:.04em;min-height:120px}
-.add-card:hover{border-color:var(--terra);color:var(--terra);background:rgba(193,113,79,.03)}
-.bills-list{display:flex;flex-direction:column;gap:.8rem}
-.bill-row{background:var(--warm-white);border-radius:14px;padding:1.1rem 1.3rem;border:1px solid rgba(193,113,79,.08);overflow:hidden;transition:all .2s}
-.bill-row:hover{box-shadow:0 4px 18px rgba(61,53,48,.08)}
-.bill-main{display:flex;align-items:center;gap:1rem}
-.bill-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
-.bill-info{flex:1;min-width:0}
-.bill-name{font-family:'Playfair Display',serif;font-size:.97rem}
-.bill-detail{font-size:.74rem;color:var(--grey);margin-top:.15rem}
-.bill-right{text-align:right;flex-shrink:0}
-.bill-amt{font-family:'Playfair Display',serif;font-size:1.05rem}
-.bill-due{font-size:.7rem;margin-top:.2rem}
-.renew-bar{height:3px;background:rgba(193,113,79,.1);border-radius:2px;margin-top:.5rem;overflow:hidden}
-.renew-fill{height:100%;border-radius:2px;transition:width .6s}
-.bill-expand{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(193,113,79,.1)}
-.deals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.8rem;margin-top:.8rem}
-.deal-card{background:var(--linen);border-radius:12px;padding:1rem;border:1px solid rgba(193,113,79,.12);cursor:pointer;transition:all .15s}
-.deal-card:hover{border-color:var(--terra);background:rgba(193,113,79,.04)}
-.deal-provider{font-size:.78rem;font-weight:700;color:var(--charcoal)}
-.deal-price{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--terra);margin:.3rem 0}
-.deal-saving{font-size:.7rem;color:var(--sage);font-weight:700}
-.deal-detail{font-size:.7rem;color:var(--grey);margin-top:.3rem;line-height:1.4}
-.deal-cta{margin-top:.7rem;width:100%;padding:.4rem;border-radius:7px;border:none;background:var(--terra);color:white;font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif}
-.searching-state{display:flex;align-items:center;gap:.8rem;padding:.8rem;color:var(--grey);font-size:.82rem}
-.spin{width:18px;height:18px;border:2px solid rgba(193,113,79,.2);border-top-color:var(--terra);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.week-tabs{display:flex;gap:.5rem;margin-bottom:1.2rem}
-.wtab{padding:.45rem 1.1rem;border-radius:9px;border:1px solid rgba(193,113,79,.15);background:white;font-size:.75rem;cursor:pointer;color:var(--grey);transition:all .15s;font-family:'Lato',sans-serif;font-weight:700}
-.wtab.active{background:var(--charcoal);color:var(--cream);border-color:var(--charcoal)}
-.meal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.55rem}
-@media(max-width:900px){.meal-grid{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:600px){.meal-grid{grid-template-columns:repeat(2,1fr)}}
-.meal-day{background:var(--warm-white);border-radius:12px;overflow:hidden;border:1px solid rgba(193,113,79,.1)}
-.meal-day.today{border:2px solid var(--terra)}
-.meal-day-hdr{background:var(--charcoal);padding:.5rem .4rem;text-align:center}
-.meal-day.today .meal-day-hdr{background:var(--terra)}
-.meal-day-name{font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--linen)}
-.meal-day-date{font-size:.62rem;color:var(--grey);margin-top:.1rem}
-.meal-slot{padding:.55rem .5rem;border-bottom:1px solid rgba(193,113,79,.07);min-height:62px}
-.meal-slot:last-child{border-bottom:none}
-.meal-slot-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);margin-bottom:.25rem;font-weight:700}
-.meal-slot-name{font-size:.7rem;color:var(--charcoal);line-height:1.3;font-family:'Playfair Display',serif}
-.meal-empty{font-size:.68rem;color:rgba(138,126,120,.4);font-style:italic}
-.mtag{display:inline-block;font-size:.52rem;padding:.08rem .35rem;border-radius:9px;margin-top:.2rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
-.mtag-quick{background:rgba(122,158,126,.15);color:var(--sage)}
-.mtag-hf{background:rgba(193,113,79,.12);color:var(--terra)}
-.mtag-gc{background:rgba(196,150,42,.12);color:var(--gold)}
-.ai-wrap{display:grid;grid-template-columns:1fr 300px;gap:1.2rem}
-@media(max-width:900px){.ai-wrap{grid-template-columns:1fr}}
-.ai-chat{background:var(--warm-white);border-radius:16px;border:1px solid rgba(193,113,79,.1);overflow:hidden;display:flex;flex-direction:column;height:620px}
-.ai-chat-hdr{background:var(--charcoal);padding:1rem 1.3rem;display:flex;align-items:center;gap:.8rem}
-.ai-av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--terra),var(--rose));display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.ai-name-text{font-family:'Playfair Display',serif;color:var(--cream);font-size:1.05rem}
-.ai-status{font-size:.68rem;color:var(--sage-l);display:flex;align-items:center;gap:.35rem;margin-top:.1rem}
-.pulse{width:6px;height:6px;border-radius:50%;background:var(--sage-l);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.ai-msgs{flex:1;overflow-y:auto;padding:1.1rem;display:flex;flex-direction:column;gap:.9rem}
-.ai-msgs::-webkit-scrollbar{width:3px}
-.ai-msgs::-webkit-scrollbar-thumb{background:rgba(193,113,79,.25);border-radius:2px}
-.msg{max-width:84%}
-.msg.user{align-self:flex-end}.msg.ai{align-self:flex-start}
-.msg-bub{padding:.75rem .95rem;border-radius:15px;font-size:.82rem;line-height:1.6;white-space:pre-wrap}
-.msg.user .msg-bub{background:var(--terra);color:white;border-bottom-right-radius:3px}
-.msg.ai .msg-bub{background:var(--linen);color:var(--charcoal);border-bottom-left-radius:3px;border:1px solid rgba(193,113,79,.08)}
-.msg-time{font-size:.62rem;color:var(--grey);margin-top:.25rem}
-.msg.user .msg-time{text-align:right}
-.typing-dots{display:flex;gap:4px;align-items:center;padding:.75rem .95rem}
-.tdot{width:7px;height:7px;border-radius:50%;background:var(--grey);animation:typing 1.2s infinite}
-.tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
-@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
-.ai-suggs{display:flex;gap:.4rem;padding:.55rem 1.1rem;background:var(--linen);overflow-x:auto;border-top:1px solid rgba(193,113,79,.08)}
-.ai-sugg{white-space:nowrap;padding:.3rem .75rem;border-radius:18px;border:1px solid rgba(193,113,79,.22);background:white;font-size:.7rem;color:var(--terra);cursor:pointer;transition:all .15s;font-family:'Lato',sans-serif}
-.ai-sugg:hover{background:var(--terra);color:white}
-.ai-input-area{padding:.9rem 1.1rem;background:var(--linen);border-top:1px solid rgba(193,113,79,.1);display:flex;gap:.6rem;align-items:flex-end}
-.ai-inp{flex:1;background:white;border:1px solid rgba(193,113,79,.18);border-radius:11px;padding:.65rem .9rem;font-family:'Lato',sans-serif;font-size:.82rem;color:var(--charcoal);resize:none;outline:none;transition:border .2s;min-height:40px;max-height:90px}
-.ai-inp:focus{border-color:var(--terra)}
-.ai-inp::placeholder{color:var(--grey)}
-.ai-send{width:40px;height:40px;border-radius:9px;background:var(--terra);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.95rem;transition:all .15s;flex-shrink:0}
-.ai-send:hover{background:var(--terra-d)}.ai-send:disabled{opacity:.45;cursor:not-allowed}
-.sidebar{display:flex;flex-direction:column;gap:1rem}
-.notif-panel{background:var(--warm-white);border-radius:16px;border:1px solid rgba(193,113,79,.1);overflow:hidden}
-.notif-hdr{background:var(--charcoal);padding:.9rem 1.1rem;font-family:'Playfair Display',serif;color:var(--cream);font-size:.95rem;display:flex;justify-content:space-between;align-items:center}
-.notif-hdr span{font-size:.65rem;color:var(--grey);font-family:'Lato',sans-serif;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.notif-list{max-height:260px;overflow-y:auto}
-.notif-item{padding:.7rem 1rem;border-bottom:1px solid rgba(193,113,79,.07);font-size:.78rem;display:flex;gap:.6rem;align-items:flex-start;cursor:pointer;transition:background .15s}
-.notif-item:hover{background:rgba(193,113,79,.04)}.notif-item:last-child{border-bottom:none}
-.notif-item.unread{background:rgba(193,113,79,.04)}
-.notif-ico{font-size:1rem;flex-shrink:0;margin-top:.05rem}
-.notif-body{flex:1}
-.notif-title{font-weight:700;color:var(--charcoal);margin-bottom:.1rem}
-.notif-sub{color:var(--grey);font-size:.72rem;line-height:1.4}
-.notif-time{font-size:.65rem;color:var(--grey);margin-top:.15rem}
-.learn-panel{background:var(--warm-white);border-radius:16px;padding:1.1rem;border:1px solid rgba(193,113,79,.1)}
-.learn-title{font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:.8rem;display:flex;align-items:center;gap:.4rem}
-.learn-item{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid rgba(193,113,79,.07);font-size:.75rem}
-.learn-item:last-child{border-bottom:none}
-.learn-item-r{text-align:right}
-.learn-days{color:var(--terra);font-weight:700;font-family:'Playfair Display',serif}
-.learn-conf{font-size:.65rem;color:var(--grey)}
-.modal-overlay{position:fixed;inset:0;background:rgba(61,53,48,.5);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
-.modal{background:var(--warm-white);border-radius:18px;padding:1.8rem;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(61,53,48,.25);animation:modalIn .2s ease}
-@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-.modal-title{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:1.2rem}
-.form-group{margin-bottom:1rem}
-.form-label{font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grey);margin-bottom:.4rem;display:block}
-.form-input{width:100%;padding:.65rem .9rem;border:1px solid rgba(193,113,79,.2);border-radius:10px;font-family:'Lato',sans-serif;font-size:.85rem;color:var(--charcoal);outline:none;background:white;transition:border .2s}
-.form-input:focus{border-color:var(--terra)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
-.modal-actions{display:flex;gap:.7rem;margin-top:1.4rem}
-.setup-card{background:linear-gradient(135deg,var(--charcoal),#5a4a42);border-radius:16px;padding:1.5rem;color:var(--cream);margin-bottom:1.2rem}
-.setup-title{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.6rem}
-.setup-steps{display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem}
-.setup-step{display:flex;align-items:flex-start;gap:.8rem;font-size:.8rem;color:rgba(245,240,232,.8);line-height:1.5}
-.step-num{width:22px;height:22px;border-radius:50%;background:rgba(193,113,79,.4);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;margin-top:.05rem}
-.setup-input-row{display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
-.setup-inp{flex:1;min-width:200px;padding:.6rem .9rem;border-radius:9px;border:1px solid rgba(245,240,232,.15);background:rgba(245,240,232,.08);color:var(--cream);font-family:'Lato',sans-serif;font-size:.82rem;outline:none}
-.setup-inp::placeholder{color:rgba(245,240,232,.4)}
-.setup-inp:focus{border-color:rgba(193,113,79,.6)}
-.skeleton{background:linear-gradient(90deg,rgba(193,113,79,.06) 0%,rgba(193,113,79,.12) 50%,rgba(193,113,79,.06) 100%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(193,113,79,.15);border:1px solid rgba(193,113,79,.15);border-radius:14px;overflow:hidden}
+.cal-day{background:var(--warm-white);min-height:110px;padding:.6rem;display:flex;flex-direction:column;gap:.4rem}
+.cal-day.off{background:var(--cream);opacity:.5}
+.cal-day-num{font-size:.75rem;font-weight:700;color:var(--grey);margin-bottom:.2rem}
+.cal-day.today{background:rgba(193,113,79,.05)}
+.cal-day.today .cal-day-num{color:var(--terra);font-size:.85rem}
+.cal-ev{font-size:.62rem;padding:.2rem .4rem;border-radius:6px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:transform .1s}
+.cal-ev:hover{transform:scale(1.02)}
+.cal-ev.google{background:rgba(122,158,126,.15);color:var(--sage);border-left:2px solid var(--sage)}
+.cal-ev.chore{background:rgba(193,113,79,.12);color:var(--terra);border-left:2px solid var(--terra)}
+.cal-ev.bill{background:rgba(196,150,42,.12);color:var(--gold);border-left:2px solid var(--gold)}
+.cal-ev.away{background:var(--charcoal);color:var(--cream);border-left:2px solid var(--gold-l)}
 `
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -981,7 +791,172 @@ function MealsTab() {
   )
 }
 
-// ─── AI TAB ───────────────────────────────────────────────────────────────────
+// ─── CALENDAR TAB ─────────────────────────────────────────────────────────────
+interface CalEvent {
+  title: string
+  start: string
+  end: string
+  type: 'google' | 'chore' | 'bill' | 'away'
+  icon?: string
+  source?: string
+}
+
+function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
+  chores: Chore[]
+  bills: Bill[]
+  calUrl1: string
+  calUrl2: string
+  nameA: string
+  nameB: string
+}) {
+  const [events, setEvents] = useState<CalEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [viewDate, setViewDate] = useState(new Date())
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    let googleEvents: CalEvent[] = []
+    if (calUrl1 || calUrl2) {
+      try {
+        const params = new URLSearchParams()
+        if (calUrl1) params.set('url1', calUrl1)
+        if (calUrl2) params.set('url2', calUrl2)
+        params.set('name1', nameA)
+        params.set('name2', nameB)
+        const res = await fetch(`/api/calendar?${params.toString()}`)
+        const data = await res.json()
+        googleEvents = (data.events || []).map((e: any) => ({
+          ...e,
+          type: e.allDay && e.location ? 'away' : 'google'
+        }))
+      } catch (err) {
+        console.error('Failed to fetch google events', err)
+      }
+    }
+
+    const choreEvents: CalEvent[] = chores.map(c => ({
+      title: c.name,
+      start: nextDueDate(c).toISOString(),
+      end: nextDueDate(c).toISOString(),
+      type: 'chore',
+      icon: c.icon
+    }))
+
+    const billEvents: CalEvent[] = []
+    const today = new Date()
+    // Generate bill events for current and next month
+    for (let m = -1; m <= 2; m++) {
+      const baseDate = new Date(today.getFullYear(), today.getMonth() + m, 1)
+      bills.forEach(b => {
+        if (b.due_day_of_month) {
+          const due = new Date(baseDate.getFullYear(), baseDate.getMonth(), b.due_day_of_month)
+          billEvents.push({
+            title: b.name,
+            start: due.toISOString(),
+            end: due.toISOString(),
+            type: 'bill',
+            icon: b.icon
+          })
+        }
+        if (b.renewal_date) {
+          const ren = new Date(b.renewal_date)
+          if (ren.getMonth() === baseDate.getMonth() && ren.getFullYear() === baseDate.getFullYear()) {
+            billEvents.push({
+              title: `RENEW: ${b.name}`,
+              start: ren.toISOString(),
+              end: ren.toISOString(),
+              type: 'bill',
+              icon: '🚨'
+            })
+          }
+        }
+      })
+    }
+
+    setEvents([...googleEvents, ...choreEvents, ...billEvents])
+    setLoading(false)
+  }, [chores, bills, calUrl1, calUrl2, nameA, nameB])
+
+  useEffect(() => { load() }, [load])
+
+  // Calendar Logic
+  const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
+  const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0)
+  const startDay = monthStart.getDay() // 0 = Sun
+  const daysInMonth = monthEnd.getDate()
+
+  const days = []
+  // Pad start
+  for (let i = 0; i < startDay; i++) days.push({ date: null })
+  // Current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), i)
+    days.push({ date: d })
+  }
+
+  const getEventsForDay = (d: Date) => {
+    const dStr = d.toISOString().split('T')[0]
+    return events.filter(e => e.start.split('T')[0] === dStr)
+      .sort((a, b) => a.type === 'away' ? -1 : 0)
+  }
+
+  return (
+    <div>
+      <div className="section-hdr">
+        <div>
+          <h2 className="section-title">Household <span>Calendar</span></h2>
+          <p className="section-sub">Synced Google events · chores · bills · away days</p>
+        </div>
+        <div style={{ display: 'flex', gap: '.6rem' }}>
+          <button className="btn-out" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}>◀</button>
+          <div style={{ minWidth: '140px', textAlign: 'center', fontFamily: "'Playfair Display',serif", fontSize: '1.2rem', padding: '0 .5rem' }}>
+            {format(viewDate, 'MMMM yyyy')}
+          </div>
+          <button className="btn-out" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}>▶</button>
+        </div>
+      </div>
+
+      <div className="cal-grid" style={{ marginBottom: '1.5rem' }}>
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+          <div key={d} style={{ background: 'var(--charcoal)', color: 'var(--cream)', fontSize: '.7rem', fontWeight: '700', textAlign: 'center', padding: '.5rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>{d}</div>
+        ))}
+        {days.map((day, i) => {
+          if (!day.date) return <div key={`pad-${i}`} className="cal-day off" />
+          const isToday = day.date.toDateString() === new Date().toDateString()
+          const dayEvents = getEventsForDay(day.date)
+          return (
+            <div key={i} className={`cal-day ${isToday ? 'today' : ''}`}>
+              <div className="cal-day-num">{day.date.getDate()}</div>
+              {dayEvents.map((ev, ei) => (
+                <div key={ei} className={`cal-ev ${ev.type}`} title={`${ev.title}${ev.source ? ` (${ev.source})` : ''}`}>
+                  {ev.icon} {ev.title}
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="card">
+        <div className="card-title">💡 Legend</div>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem' }}>
+            <div className="cal-ev google" style={{ width: '40px', height: '18px' }} /> Google Event
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem' }}>
+            <div className="cal-ev away" style={{ width: '40px', height: '18px' }} /> Away / Out
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem' }}>
+            <div className="cal-ev chore" style={{ width: '40px', height: '18px' }} /> Chore Due
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem' }}>
+            <div className="cal-ev bill" style={{ width: '40px', height: '18px' }} /> Bill / Renewal
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 type Message = { role: 'ai' | 'user'; text: string; time: string }
 
 function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[]; notifications: Notification[] }) {
@@ -1589,6 +1564,7 @@ export default function App() {
 
   const TABS = [
     { id: 'overview', label: 'Overview', icon: '🏡' },
+    { id: 'calendar', label: 'Calendar', icon: '📅' },
     { id: 'chores', label: 'Chores', icon: '🧹', count: overdue },
     { id: 'meals', label: 'Meals', icon: '🍽️' },
     { id: 'bills', label: 'Bills & Deals', icon: '💰', count: urgentBills },
@@ -1635,7 +1611,19 @@ export default function App() {
 
         <main className="main">
           {tab === 'overview' && <OverviewTab chores={chores} bills={bills} notifications={notifications} setTab={setTab} />}
-          {tab === 'chores' && <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} nameA={nameA} nameB={nameB} />}
+          {tab === 'calendar' && (
+            <CalendarTab
+              chores={chores}
+              bills={bills}
+              calUrl1={household?.calendar_url_a || ''}
+              calUrl2={household?.calendar_url_b || ''}
+              nameA={nameA}
+              nameB={nameB}
+            />
+          )}
+          {tab === 'chores' && (
+            <ChoresTab chores={chores} loading={loading.chores} onMarkDone={handleMarkDone} onAdd={handleAddChore} onEdit={handleEditChore} onDelete={handleDeleteChore} nameA={nameA} nameB={nameB} />
+          )}
           {tab === 'meals' && <MealsTab />}
           {tab === 'bills' && <BillsTab bills={bills} loading={loading.bills} onAdd={handleAddBill} onEdit={handleEditBill} onDelete={handleDeleteBill} />}
           {tab === 'ai' && <AITab chores={chores} bills={bills} notifications={notifications} />}
