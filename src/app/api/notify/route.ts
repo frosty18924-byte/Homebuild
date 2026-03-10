@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 async function sendTelegram(botToken: string, chatId: string, message: string) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`
@@ -22,6 +20,10 @@ async function sendTelegram(botToken: string, chatId: string, message: string) {
 
 // Called by Vercel Cron (daily at 8am)
 export async function GET(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const authHeader = req.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -102,6 +104,10 @@ export async function GET(req: NextRequest) {
 
 // Manual send from settings UI
 export async function POST(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   try {
     const { botToken, chatId, message } = await req.json()
     const ok = await sendTelegram(botToken, chatId, message)

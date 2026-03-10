@@ -1,33 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { choreStatus, daysUntilDue, effectiveFreq, nextDueDate } from '@/lib/supabase'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 
 // ─── Fetch live home data ─────────────────────────────────────────────────────
-async function getHomeData() {
+async function getHomeData(supabase: any, householdId: string) {
   const [choreRes, billRes, mealRes] = await Promise.all([
     supabase
       .from('chores')
       .select('*, chore_completions(completed_at)')
-      .eq('household_id', HOUSEHOLD_ID)
+      .eq('household_id', householdId)
       .eq('is_active', true),
     supabase
       .from('bills')
       .select('*')
-      .eq('household_id', HOUSEHOLD_ID)
+      .eq('household_id', householdId)
       .eq('is_active', true),
     supabase
       .from('meal_plans')
       .select('*')
-      .eq('household_id', HOUSEHOLD_ID)
+      .eq('household_id', householdId)
       .eq('plan_date', new Date().toISOString().split('T')[0]),
   ])
 
@@ -49,11 +43,11 @@ async function getHomeData() {
 }
 
 // ─── Mark a chore done by name match ─────────────────────────────────────────
-async function markChoreDoneByName(choreName: string) {
+async function markChoreDoneByName(supabase: any, householdId: string, choreName: string) {
   const { data: chores } = await supabase
     .from('chores')
     .select('id, name')
-    .eq('household_id', HOUSEHOLD_ID)
+    .eq('household_id', householdId)
     .eq('is_active', true)
 
   if (!chores) return null
@@ -74,7 +68,7 @@ async function markChoreDoneByName(choreName: string) {
 }
 
 // ─── Build spoken response via Claude ────────────────────────────────────────
-async function buildVoiceResponse(intent: string, query: string, homeData: any): Promise<string> {
+async function buildVoiceResponse(anthropic: Anthropic, intent: string, query: string, homeData: any): Promise<string> {
   const { chores, bills, todayMeals } = homeData
 
   const overdueChores = chores.filter((c: any) => choreStatus(c) === 'overdue')
@@ -92,7 +86,7 @@ TODAY'S MEALS: ${todayMeals.map((m: any) => `${m.slot}: ${m.meal_name} (${m.prep
   `.trim()
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-3-5-sonnet-20240620',
     max_tokens: 300,
     system: `You are Hearth, a household AI assistant being accessed via Google Home voice.
     
@@ -114,6 +108,13 @@ ${context}`,
 
 // ─── Main webhook handler ─────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const householdId = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
+
   try {
     const body = await req.json()
 
@@ -141,13 +142,13 @@ export async function POST(req: NextRequest) {
       spokenText.toLowerCase().includes('mark') ||
       spokenText.toLowerCase().includes('finished')
     ) {
-      const homeData = await getHomeData()
+      const homeData = await getHomeData(supabase, householdId)
       const choreName = spokenText
         .toLowerCase()
         .replace(/mark|the|is done|have done|ive done|i've done|finished|as done|complete/g, '')
         .trim()
 
-      const matched = await markChoreDoneByName(choreName)
+      const matched = await markChoreDoneByName(supabase, householdId, choreName)
 
       if (matched) {
         responseText = `Done! Hearth has marked ${matched} as complete and updated your schedule.`
@@ -166,8 +167,8 @@ export async function POST(req: NextRequest) {
       spokenText.toLowerCase().includes('need to do') ||
       spokenText.toLowerCase().includes('chores')
     ) {
-      const homeData = await getHomeData()
-      responseText = await buildVoiceResponse('whats_due', spokenText || "What chores are due or overdue right now?", homeData)
+      const homeData = await getHomeData(supabase, householdId)
+      responseText = await buildVoiceResponse(anthropic, 'whats_due', spokenText || "What chores are due or overdue right now?", homeData)
     }
 
     // ── Intent: Dinner / meals ───────────────────────────────────────────────
@@ -178,8 +179,8 @@ export async function POST(req: NextRequest) {
       spokenText.toLowerCase().includes('eat') ||
       spokenText.toLowerCase().includes('meal')
     ) {
-      const homeData = await getHomeData()
-      responseText = await buildVoiceResponse('meals', spokenText || "What are we having for lunch and dinner today?", homeData)
+      const homeData = await getHomeData(supabase, householdId)
+      responseText = await buildVoiceResponse(anthropic, 'meals', spokenText || "What are we having for lunch and dinner today?", homeData)
     }
 
     // ── Intent: Bills / renewals ─────────────────────────────────────────────
@@ -192,14 +193,14 @@ export async function POST(req: NextRequest) {
       spokenText.toLowerCase().includes('insurance') ||
       spokenText.toLowerCase().includes('renew')
     ) {
-      const homeData = await getHomeData()
-      responseText = await buildVoiceResponse('bills', spokenText || "What bills are coming up for renewal?", homeData)
+      const homeData = await getHomeData(supabase, householdId)
+      responseText = await buildVoiceResponse(anthropic, 'bills', spokenText || "What bills are coming up for renewal?", homeData)
     }
 
     // ── Default: Pass everything to Claude with full context ─────────────────
     else {
-      const homeData = await getHomeData()
-      responseText = await buildVoiceResponse('general', spokenText || "Give me a quick home summary", homeData)
+      const homeData = await getHomeData(supabase, householdId)
+      responseText = await buildVoiceResponse(anthropic, 'general', spokenText || "Give me a quick home summary", homeData)
     }
 
     // ── Google Actions response format ───────────────────────────────────────
