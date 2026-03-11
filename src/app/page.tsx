@@ -217,6 +217,9 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .setup-inp:focus{border-color:rgba(193,113,79,.6)}
 .skeleton{background:linear-gradient(90deg,rgba(193,113,79,.06) 0%,rgba(193,113,79,.12) 50%,rgba(193,113,79,.06) 100%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cal-dow{background:var(--charcoal);color:var(--cream);font-size:.7rem;font-weight:700;text-align:center;padding:.5rem;text-transform:uppercase;letter-spacing:.05em}
+.cal-dow-short{display:none}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(193,113,79,.15);border:1px solid rgba(193,113,79,.15);border-radius:14px;overflow:hidden}
 .cal-day{background:var(--warm-white);min-height:110px;padding:.6rem;display:flex;flex-direction:column;gap:.4rem}
 .cal-day.off{background:var(--cream);opacity:.5}
@@ -229,11 +232,34 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .cal-ev.chore{background:rgba(193,113,79,.12);color:var(--terra);border-left:2px solid var(--terra)}
 .cal-ev.bill{background:rgba(196,150,42,.12);color:var(--gold);border-left:2px solid var(--gold)}
 .cal-ev.away{background:var(--charcoal);color:var(--cream);border-left:2px solid var(--gold-l)}
+@media(max-width:600px){
+  .cal-scroll{margin:0 -1.5rem;padding:0 1.5rem}
+  .cal-grid{min-width:560px}
+  .cal-day{min-height:88px;padding:.45rem;gap:.25rem}
+  .cal-ev{font-size:.58rem}
+  .cal-dow{font-size:.65rem;padding:.4rem}
+  .cal-dow-full{display:none}
+  .cal-dow-short{display:inline}
+}
+@media(max-width:420px){
+  .cal-grid{min-width:520px}
+}
 `
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = (d: Date) => format(d, 'd MMM')
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const localDateKey = (d: Date) => format(d, 'yyyy-MM-dd')
+const parseDateInput = (s: string): Date | null => {
+  // Treat YYYY-MM-DD as a local date to avoid timezone shifting (mobile Safari in particular).
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(n => Number(n))
+    const dt = new Date(y, m - 1, d)
+    return Number.isNaN(dt.getTime()) ? null : dt
+  }
+  const dt = new Date(s)
+  return Number.isNaN(dt.getTime()) ? null : dt
+}
 const nowTime = () => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 const pence = (p: number) => `£${(p / 100).toFixed(0)}`
 const penceFull = (p: number) => `£${(p / 100).toFixed(2)}`
@@ -1025,7 +1051,7 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
         if (calUrl2) params.set('url2', calUrl2)
         params.set('name1', nameA)
         params.set('name2', nameB)
-        const res = await fetch(`/ api / calendar ? ${params.toString()} `)
+        const res = await fetch(`/api/calendar?${params.toString()}`)
         const data = await res.json()
         googleEvents = (data.events || []).map((e: any) => ({
           ...e,
@@ -1036,13 +1062,17 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
       }
     }
 
-    const choreEvents: CalEvent[] = chores.map(c => ({
-      title: c.name,
-      start: nextDueDate(c).toISOString(),
-      end: nextDueDate(c).toISOString(),
-      type: 'chore',
-      icon: c.icon
-    }))
+    const choreEvents: CalEvent[] = chores.map(c => {
+      const due = nextDueDate(c)
+      const key = localDateKey(due)
+      return {
+        title: c.name,
+        start: key,
+        end: key,
+        type: 'chore',
+        icon: c.icon
+      }
+    })
 
     const billEvents: CalEvent[] = []
     const today = new Date()
@@ -1052,21 +1082,24 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
       bills.forEach(b => {
         if (b.due_day_of_month) {
           const due = new Date(baseDate.getFullYear(), baseDate.getMonth(), b.due_day_of_month)
+          const key = localDateKey(due)
           billEvents.push({
             title: b.name,
-            start: due.toISOString(),
-            end: due.toISOString(),
+            start: key,
+            end: key,
             type: 'bill',
             icon: b.icon
           })
         }
         if (b.renewal_date) {
-          const ren = new Date(b.renewal_date)
+          const ren = parseDateInput(b.renewal_date)
+          if (!ren) return
           if (ren.getMonth() === baseDate.getMonth() && ren.getFullYear() === baseDate.getFullYear()) {
+            const key = localDateKey(ren)
             billEvents.push({
               title: `RENEW: ${b.name} `,
-              start: ren.toISOString(),
-              end: ren.toISOString(),
+              start: key,
+              end: key,
               type: 'bill',
               icon: '🚨'
             })
@@ -1095,11 +1128,23 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
     const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), i)
     days.push({ date: d })
   }
+  // Pad end so the grid always finishes on a full week.
+  while (days.length % 7 !== 0) days.push({ date: null })
 
   const getEventsForDay = (d: Date) => {
-    const dStr = d.toISOString().split('T')[0]
-    return events.filter(e => e.start.split('T')[0] === dStr)
-      .sort((a, b) => a.type === 'away' ? -1 : 0)
+    const dKey = localDateKey(d)
+    return events
+      .filter(e => {
+        const dt = parseDateInput(e.start)
+        if (!dt) return false
+        return localDateKey(dt) === dKey
+      })
+      .sort((a, b) => {
+        const aAway = a.type === 'away'
+        const bAway = b.type === 'away'
+        if (aAway !== bAway) return aAway ? -1 : 1
+        return a.title.localeCompare(b.title)
+      })
   }
 
   return (
@@ -1118,25 +1163,48 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
         </div>
       </div>
 
-      <div className="cal-grid" style={{ marginBottom: '1.5rem' }}>
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-          <div key={d} style={{ background: 'var(--charcoal)', color: 'var(--cream)', fontSize: '.7rem', fontWeight: '700', textAlign: 'center', padding: '.5rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>{d}</div>
-        ))}
-        {days.map((day, i) => {
-          if (!day.date) return <div key={`pad - ${i} `} className="cal-day off" />
-          const isToday = day.date.toDateString() === new Date().toDateString()
-          const dayEvents = getEventsForDay(day.date)
-          return (
-            <div key={i} className={`cal-day ${isToday ? 'today' : ''}`}>
-              <div className="cal-day-num">{day.date.getDate()}</div>
-              {dayEvents.map((ev, ei) => (
-                <div key={ei} className={`cal-ev ${ev.type}`} title={`${ev.title}${ev.source ? ` (${ev.source})` : ''}`}>
-                  {ev.icon} {ev.title}
-                </div>
-              ))}
+      <div className="cal-scroll" style={{ marginBottom: '1.5rem' }}>
+        <div className="cal-grid">
+          {[
+            { full: 'Sun', short: 'S' },
+            { full: 'Mon', short: 'M' },
+            { full: 'Tue', short: 'T' },
+            { full: 'Wed', short: 'W' },
+            { full: 'Thu', short: 'T' },
+            { full: 'Fri', short: 'F' },
+            { full: 'Sat', short: 'S' },
+          ].map(d => (
+            <div key={d.full} className="cal-dow">
+              <span className="cal-dow-full">{d.full}</span>
+              <span className="cal-dow-short">{d.short}</span>
             </div>
-          )
-        })}
+          ))}
+          {loading ? (
+            Array.from({ length: 35 }, (_, i) => (
+              <div key={i} className="cal-day">
+                <div className="skeleton" style={{ height: '12px', width: '24px' }} />
+                <div className="skeleton" style={{ height: '14px', borderRadius: '6px' }} />
+                <div className="skeleton" style={{ height: '14px', borderRadius: '6px' }} />
+              </div>
+            ))
+          ) : (
+            days.map((day, i) => {
+              if (!day.date) return <div key={`pad-${i}`} className="cal-day off" />
+              const isToday = day.date.toDateString() === new Date().toDateString()
+              const dayEvents = getEventsForDay(day.date)
+              return (
+                <div key={i} className={`cal-day ${isToday ? 'today' : ''}`}>
+                  <div className="cal-day-num">{day.date.getDate()}</div>
+                  {dayEvents.map((ev, ei) => (
+                    <div key={ei} className={`cal-ev ${ev.type}`} title={`${ev.title}${ev.source ? ` (${ev.source})` : ''}`}>
+                      {ev.icon} {ev.title}
+                    </div>
+                  ))}
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
 
       <div className="card">
