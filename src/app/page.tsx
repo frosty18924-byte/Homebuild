@@ -16,7 +16,7 @@ import { format, addDays, startOfToday } from 'date-fns'
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const STYLE = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap');
-:root{--cream:#F5F0E8;--linen:#EDE5D8;--warm-white:#FAF7F2;--terra:#C1714F;--terra-l:#D4896A;--terra-d:#A05A3A;--sage:#7A9E7E;--sage-l:#A8C5AB;--rose:#C4877A;--charcoal:#3D3530;--grey:#8A7E78;--gold:#C4962A;--gold-l:#E8B84B}
+:root{--cream:#F5F0E8;--linen:#EDE5D8;--warm-white:#FAF7F2;--terra:#C1714F;--terra-l:#D4896A;--terra-d:#A05A3A;--sage:#7A9E7E;--sage-l:#A8C5AB;--rose:#C4877A;--charcoal:#3D3530;--grey:#8A7E78;--gold:#C4962A;--gold-l:#E8B84B;--cal-col-min:120px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)}
 .app{min-height:100vh;background:var(--cream);background-image:radial-gradient(ellipse at 15% 0%,rgba(193,113,79,.07) 0%,transparent 55%),radial-gradient(ellipse at 85% 100%,rgba(122,158,126,.07) 0%,transparent 55%)}
@@ -217,10 +217,9 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .setup-inp:focus{border-color:rgba(193,113,79,.6)}
 .skeleton{background:linear-gradient(90deg,rgba(193,113,79,.06) 0%,rgba(193,113,79,.12) 50%,rgba(193,113,79,.06) 100%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 .cal-dow{background:var(--charcoal);color:var(--cream);font-size:.7rem;font-weight:700;text-align:center;padding:.5rem;text-transform:uppercase;letter-spacing:.05em}
-.cal-dow-short{display:none}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(193,113,79,.15);border:1px solid rgba(193,113,79,.15);border-radius:14px;overflow:hidden}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(var(--cal-col-min),1fr));min-width:840px;gap:1px;background:rgba(193,113,79,.15);border:1px solid rgba(193,113,79,.15);border-radius:14px;overflow:hidden}
 .cal-day{background:var(--warm-white);min-height:110px;padding:.6rem;display:flex;flex-direction:column;gap:.4rem}
 .cal-day.off{background:var(--cream);opacity:.5}
 .cal-day-num{font-size:.75rem;font-weight:700;color:var(--grey);margin-bottom:.2rem}
@@ -232,18 +231,6 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .cal-ev.chore{background:rgba(193,113,79,.12);color:var(--terra);border-left:2px solid var(--terra)}
 .cal-ev.bill{background:rgba(196,150,42,.12);color:var(--gold);border-left:2px solid var(--gold)}
 .cal-ev.away{background:var(--charcoal);color:var(--cream);border-left:2px solid var(--gold-l)}
-@media(max-width:600px){
-  .cal-scroll{margin:0 -1.5rem;padding:0 1.5rem}
-  .cal-grid{min-width:560px}
-  .cal-day{min-height:88px;padding:.45rem;gap:.25rem}
-  .cal-ev{font-size:.58rem}
-  .cal-dow{font-size:.65rem;padding:.4rem}
-  .cal-dow-full{display:none}
-  .cal-dow-short{display:inline}
-}
-@media(max-width:420px){
-  .cal-grid{min-width:520px}
-}
 `
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -1165,19 +1152,8 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
 
       <div className="cal-scroll" style={{ marginBottom: '1.5rem' }}>
         <div className="cal-grid">
-          {[
-            { full: 'Sun', short: 'S' },
-            { full: 'Mon', short: 'M' },
-            { full: 'Tue', short: 'T' },
-            { full: 'Wed', short: 'W' },
-            { full: 'Thu', short: 'T' },
-            { full: 'Fri', short: 'F' },
-            { full: 'Sat', short: 'S' },
-          ].map(d => (
-            <div key={d.full} className="cal-dow">
-              <span className="cal-dow-full">{d.full}</span>
-              <span className="cal-dow-short">{d.short}</span>
-            </div>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+            <div key={d} className="cal-dow">{d}</div>
           ))}
           {loading ? (
             Array.from({ length: 35 }, (_, i) => (
