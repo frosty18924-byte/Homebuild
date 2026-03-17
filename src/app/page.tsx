@@ -1959,6 +1959,11 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
   const [busyDays, setBusyDays] = useState<string[]>([])
   const [calTesting, setCalTesting] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [members, setMembers] = useState<{ user_id: string; email: string | null; role: string }[]>([])
+  const [memberEmail, setMemberEmail] = useState('')
+  const [memberRole, setMemberRole] = useState<'member' | 'owner'>('member')
+  const [memberError, setMemberError] = useState('')
+  const [memberLoading, setMemberLoading] = useState(false)
 
   // Load directly from Supabase so we always get fresh data including calendar URLs
   useEffect(() => {
@@ -1979,6 +1984,19 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
       }
     }
     loadSettings()
+  }, [])
+
+  useEffect(() => {
+    async function loadMembers() {
+      try {
+        const res = await fetch('/api/members', { headers: { ...(await authHeaders()) } })
+        const data = await res.json()
+        setMembers(data.members || [])
+      } catch (err) {
+        console.error('Failed to load members', err)
+      }
+    }
+    loadMembers()
   }, [])
 
   const [nameError, setNameError] = useState('')
@@ -2061,6 +2079,29 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
     setCalTesting(false)
   }
 
+  const addMember = async () => {
+    setMemberError('')
+    if (!memberEmail.trim()) return
+    setMemberLoading(true)
+    try {
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({ email: memberEmail.trim(), role: memberRole }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not add member')
+      setMemberEmail('')
+      const refreshed = await fetch('/api/members', { headers: { ...(await authHeaders()) } })
+      const refreshedData = await refreshed.json()
+      setMembers(refreshedData.members || [])
+    } catch (err: any) {
+      setMemberError(err.message || 'Could not add member')
+    } finally {
+      setMemberLoading(false)
+    }
+  }
+
   return (
     <div>
       <div className="section-hdr">
@@ -2116,6 +2157,39 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
             <div>Names in DB (as loaded): <strong style={{ color: 'var(--charcoal)' }}>{personAName}</strong> &amp; <strong style={{ color: 'var(--charcoal)' }}>{personBName}</strong></div>
           </div>
         )}
+      </div>
+
+      <div className="card" style={{ marginTop: '1.2rem' }}>
+        <div className="card-title">👥 Household Members</div>
+        <div className="form-row" style={{ marginBottom: '1rem' }}>
+          <div className="form-group">
+            <label className="form-label">Member email</label>
+            <input className="form-input" value={memberEmail} onChange={e => setMemberEmail(e.target.value)} placeholder="person@example.com" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Role</label>
+            <select className="form-input" value={memberRole} onChange={e => setMemberRole(e.target.value as 'member' | 'owner')}>
+              <option value="member">Member</option>
+              <option value="owner">Owner</option>
+            </select>
+          </div>
+        </div>
+        <button className="btn-solid" onClick={addMember} disabled={!memberEmail || memberLoading}>
+          {memberLoading ? 'Adding…' : 'Add Member'}
+        </button>
+        {memberError && <div style={{ marginTop: '.5rem', fontSize: '.78rem', color: 'var(--terra)', fontWeight: '700' }}>⚠️ {memberError}</div>}
+
+        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+          {members.length === 0 ? (
+            <div className="section-sub">No members found.</div>
+          ) : (
+            members.map(m => (
+              <div key={m.user_id} style={{ fontSize: '.8rem', color: 'var(--charcoal)' }}>
+                {m.email || m.user_id} — <span style={{ color: 'var(--grey)' }}>{m.role}</span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
 
