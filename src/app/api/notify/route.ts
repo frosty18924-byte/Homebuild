@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/server-auth'
 
 
 
@@ -109,6 +110,11 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   try {
+    const user = await requireAuth(req)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { botToken, chatId, message } = await req.json()
     const ok = await sendTelegram(botToken, chatId, message)
     return NextResponse.json({ ok })

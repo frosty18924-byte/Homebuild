@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { choreStatus, daysUntilDue, effectiveFreq, nextDueDate } from '@/lib/supabase'
+import { requireAuth } from '@/lib/server-auth'
 
 
 // ─── Fetch live home data ─────────────────────────────────────────────────────
@@ -116,6 +117,11 @@ export async function POST(req: NextRequest) {
   const householdId = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 
   try {
+    const user = await requireAuth(req)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
 
     // Google Actions sends handler/intent info here

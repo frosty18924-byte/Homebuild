@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/server-auth'
 
 interface CalendarEvent {
     title: string
@@ -108,6 +109,11 @@ async function fetchCalendarEvents(icalUrl: string, daysAhead: number = 60, sour
 }
 
 export async function GET(req: NextRequest) {
+    const user = await requireAuth(req)
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
     const url1 = searchParams.get('url1')
     const url2 = searchParams.get('url2')

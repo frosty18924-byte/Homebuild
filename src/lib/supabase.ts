@@ -85,6 +85,38 @@ export type MealPlan = {
   shopping_tips: string | null
 }
 
+export type FavoriteMeal = {
+  id: string
+  household_id: string
+  meal_name: string
+  meal_tag: string
+  prep_time_mins: number
+  source: string | null
+  recipe: string | null
+  ingredients: { item: string; amount: string }[] | null
+  created_at: string
+}
+
+export type CupboardItem = {
+  id: string
+  household_id: string
+  item: string
+  quantity: string | null
+  notes: string | null
+  expires_on: string | null
+  created_at: string
+}
+
+export type ShoppingCheck = {
+  id: string
+  household_id: string
+  week_start: string
+  store: string
+  item: string
+  is_checked: boolean
+  updated_at: string
+}
+
 export type Notification = {
   id: string
   household_id: string
@@ -244,6 +276,100 @@ export async function saveMealPlan(meals: Omit<MealPlan, 'id' | 'household_id' |
     .select()
   if (error) throw error
   return data || []
+}
+
+export async function getFavoriteMeals() {
+  const { data } = await supabase
+    .from('meal_favorites')
+    .select('*')
+    .eq('household_id', HOUSEHOLD_ID)
+    .order('created_at', { ascending: false })
+  return (data || []) as FavoriteMeal[]
+}
+
+export async function addFavoriteMeal(meal: Omit<FavoriteMeal, 'id' | 'household_id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('meal_favorites')
+    .upsert({ ...meal, household_id: HOUSEHOLD_ID }, { onConflict: 'household_id,meal_name' })
+    .select()
+    .single()
+  if (error) throw error
+  return data as FavoriteMeal
+}
+
+export async function removeFavoriteMeal(id: string) {
+  await supabase.from('meal_favorites').delete().eq('id', id)
+}
+
+export async function getCupboardItems() {
+  const { data } = await supabase
+    .from('cupboard_items')
+    .select('*')
+    .eq('household_id', HOUSEHOLD_ID)
+    .order('created_at', { ascending: false })
+  return (data || []) as CupboardItem[]
+}
+
+export async function addCupboardItem(item: Omit<CupboardItem, 'id' | 'household_id' | 'created_at'>) {
+  const { data, error } = await supabase
+    .from('cupboard_items')
+    .insert({ ...item, household_id: HOUSEHOLD_ID })
+    .select()
+    .single()
+  if (error) throw error
+  return data as CupboardItem
+}
+
+export async function deleteCupboardItem(id: string) {
+  await supabase.from('cupboard_items').delete().eq('id', id)
+}
+
+export async function deleteCupboardByItem(item: string) {
+  await supabase.from('cupboard_items').delete().eq('household_id', HOUSEHOLD_ID).ilike('item', item)
+}
+
+export async function updateCupboardItem(id: string, updates: Partial<Pick<CupboardItem, 'quantity' | 'notes' | 'expires_on'>>) {
+  const { data, error } = await supabase
+    .from('cupboard_items')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as CupboardItem
+}
+
+export async function getShoppingChecks(weekStart: string) {
+  const { data } = await supabase
+    .from('shopping_checks')
+    .select('*')
+    .eq('household_id', HOUSEHOLD_ID)
+    .eq('week_start', weekStart)
+  return (data || []) as ShoppingCheck[]
+}
+
+export async function upsertShoppingCheck(weekStart: string, store: string, item: string, isChecked: boolean) {
+  const { data, error } = await supabase
+    .from('shopping_checks')
+    .upsert({
+      household_id: HOUSEHOLD_ID,
+      week_start: weekStart,
+      store,
+      item,
+      is_checked: isChecked,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'household_id,week_start,store,item' })
+    .select()
+    .single()
+  if (error) throw error
+  return data as ShoppingCheck
+}
+
+export async function clearShoppingChecks(weekStart: string) {
+  await supabase.from('shopping_checks')
+    .delete()
+    .eq('household_id', HOUSEHOLD_ID)
+    .eq('week_start', weekStart)
 }
 
 export async function getNotifications(limit = 30) {

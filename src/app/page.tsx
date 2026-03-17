@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import {
   supabase, HOUSEHOLD_ID,
   getChores, markChoreDone, addChore, updateChore, deleteChore,
   getBills, addBill, updateBill, deleteBill, getDealsForBill,
-  getMealPlan, saveMealPlan,
+  getMealPlan, saveMealPlan, getFavoriteMeals, addFavoriteMeal, removeFavoriteMeal,
+  getCupboardItems, addCupboardItem, deleteCupboardItem, deleteCupboardByItem, updateCupboardItem,
+  getShoppingChecks, upsertShoppingCheck, clearShoppingChecks,
   getNotifications, markNotificationRead, markAllNotificationsRead,
   getHousehold,
   choreStatus, daysUntilDue, nextDueDate, effectiveFreq,
   type Chore, type Bill, type BillDeal, type MealPlan, type Notification, type Household,
+  type FavoriteMeal, type CupboardItem,
 } from '@/lib/supabase'
 import { format, addDays, startOfToday } from 'date-fns'
 
@@ -26,6 +30,8 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .hdr-name{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--cream)}
 .hdr-sub{font-size:.65rem;color:var(--grey);letter-spacing:.08em;text-transform:uppercase}
 .hdr-right{display:flex;align-items:center;gap:.8rem}
+.hdr-logout{padding:.3rem .7rem;border-radius:8px;border:1px solid rgba(245,240,232,.25);background:transparent;color:var(--linen);font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.hdr-logout:hover{background:rgba(245,240,232,.12)}
 .hdr-date{text-align:right;color:var(--grey);font-size:.75rem}
 .hdr-date strong{display:block;color:var(--linen);font-size:.9rem;font-weight:300}
 .notif-btn{position:relative;width:34px;height:34px;border-radius:9px;border:1px solid rgba(245,240,232,.15);background:rgba(245,240,232,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:background .15s}
@@ -38,6 +44,18 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .nav-btn:hover{color:var(--terra)}.nav-btn.active{color:var(--terra);border-bottom-color:var(--terra)}
 .nav-count{position:absolute;top:10px;right:6px;min-width:16px;height:16px;border-radius:8px;background:var(--terra);color:white;font-size:.6rem;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .main{padding:1.5rem;max-width:1400px;margin:0 auto}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--cream)}
+.auth-card{width:100%;max-width:420px;background:var(--warm-white);border-radius:18px;border:1px solid rgba(193,113,79,.12);box-shadow:0 12px 30px rgba(61,53,48,.08);padding:2rem}
+.auth-title{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--charcoal)}
+.auth-sub{font-size:.82rem;color:var(--grey);margin-top:.35rem}
+.auth-form{margin-top:1.2rem;display:flex;flex-direction:column;gap:.7rem}
+.auth-input{padding:.6rem .8rem;border-radius:10px;border:1px solid rgba(193,113,79,.2);background:white;font-family:'Lato',sans-serif;font-size:.85rem;color:var(--charcoal);outline:none}
+.auth-input:focus{border-color:var(--terra)}
+.auth-btn{padding:.6rem 1rem;border-radius:10px;border:none;background:var(--charcoal);color:var(--cream);font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.auth-btn:hover{background:#2b2522}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-msg{font-size:.75rem;color:var(--sage);margin-top:.4rem}
+.auth-error{font-size:.75rem;color:var(--terra);margin-top:.4rem}
 .section-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
 .section-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--charcoal)}
 .section-title span{color:var(--terra);font-style:italic}
@@ -140,10 +158,24 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .meal-slot-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.07em;color:var(--grey);margin-bottom:.25rem;font-weight:700}
 .meal-slot-name{font-size:.7rem;color:var(--charcoal);line-height:1.3;font-family:'Playfair Display',serif}
 .meal-empty{font-size:.68rem;color:rgba(138,126,120,.4);font-style:italic}
+.meal-slot.selectable{cursor:pointer;transition:background .1s}
+.meal-slot.selectable:hover{background:rgba(193,113,79,0.05)}
+.meal-slot.selected{background:rgba(122,158,126,.08);outline:2px solid var(--sage)}
+.meal-slot-selected-tag{display:inline-block;margin-top:.25rem;font-size:.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sage)}
 .mtag{display:inline-block;font-size:.52rem;padding:.08rem .35rem;border-radius:9px;margin-top:.2rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
 .mtag-quick{background:rgba(122,158,126,.15);color:var(--sage)}
 .mtag-hf{background:rgba(193,113,79,.12);color:var(--terra)}
 .mtag-gc{background:rgba(196,150,42,.12);color:var(--gold)}
+.meal-tools{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.2rem}
+@media(max-width:900px){.meal-tools{grid-template-columns:1fr}}
+.tool-list{display:flex;flex-direction:column;gap:.6rem}
+.tool-row{display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem;padding:.6rem .7rem;border-radius:10px;border:1px solid rgba(193,113,79,.1);background:var(--linen)}
+.tool-title{font-size:.8rem;font-weight:700}
+.tool-sub{font-size:.7rem;color:var(--grey);margin-top:.15rem}
+.tool-actions{display:flex;gap:.4rem;flex-shrink:0}
+.tool-input-row{display:flex;gap:.5rem;flex-wrap:wrap}
+.tool-input{flex:1;min-width:160px;padding:.5rem .7rem;border-radius:9px;border:1px solid rgba(193,113,79,.2);background:white;font-family:'Lato',sans-serif;font-size:.8rem;color:var(--charcoal);outline:none}
+.tool-input:focus{border-color:var(--terra)}
 .ai-wrap{display:grid;grid-template-columns:1fr 300px;gap:1.2rem}
 @media(max-width:900px){.ai-wrap{grid-template-columns:1fr}}
 .ai-chat{background:var(--warm-white);border-radius:16px;border:1px solid rgba(193,113,79,.1);overflow:hidden;display:flex;flex-direction:column;height:620px}
@@ -271,6 +303,12 @@ const SUGGS = [
   "Plan this week's meals",
   "Search for cheaper energy",
 ]
+
+const authHeaders = async () => {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 // ─── MODAL: Add Chore ─────────────────────────────────────────────────────────
 function AddChoreModal({ onClose, onAdd, nameA, nameB }: { onClose: () => void; onAdd: (f: any) => Promise<void>; nameA?: string; nameB?: string }) {
@@ -696,7 +734,7 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
     try {
       const res = await fetch('/api/deals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           billId: bill.id,
           billType: bill.bill_type,
@@ -826,7 +864,17 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
 }
 
 // ─── MODAL: Meal Recipe ──────────────────────────────────────────────────────
-function MealRecipeModal({ meal, onClose }: { meal: MealPlan; onClose: () => void }) {
+function MealRecipeModal({
+  meal,
+  onClose,
+  onFavorite,
+  isFavorited,
+}: {
+  meal: MealPlan
+  onClose: () => void
+  onFavorite: () => void
+  isFavorited: boolean
+}) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
@@ -872,7 +920,10 @@ function MealRecipeModal({ meal, onClose }: { meal: MealPlan; onClose: () => voi
         </div>
 
         <div className="modal-actions">
-          <button className="btn-solid" style={{ width: '100%' }} onClick={onClose}>Done</button>
+          <button className="btn-out" onClick={onFavorite} disabled={isFavorited}>
+            {isFavorited ? '★ Favorited' : '☆ Add to Favorites'}
+          </button>
+          <button className="btn-solid" style={{ flex: 1 }} onClick={onClose}>Done</button>
         </div>
       </div>
     </div>
@@ -886,14 +937,29 @@ function MealsTab() {
   const [generating, setGenerating] = useState(false)
   const [week, setWeek] = useState(0)
   const [selectedMeal, setSelectedMeal] = useState<MealPlan | null>(null)
+  const [favorites, setFavorites] = useState<FavoriteMeal[]>([])
+  const [cupboard, setCupboard] = useState<CupboardItem[]>([])
+  const [targetSlot, setTargetSlot] = useState<{ date: string; slot: 'lunch' | 'dinner' } | null>(null)
+  const [selectMode, setSelectMode] = useState(false)
+  const [cupItem, setCupItem] = useState('')
+  const [cupQty, setCupQty] = useState('')
+  const [cupExpiry, setCupExpiry] = useState('')
+  const [cupNotes, setCupNotes] = useState('')
+  const [checkedShopping, setCheckedShopping] = useState<Record<string, boolean>>({})
   const start = startOfToday()
 
   const load = async () => {
     setLoading(true)
     const startD = format(start, 'yyyy-MM-dd')
     const endD = format(addDays(start, 13), 'yyyy-MM-dd')
-    const data = await getMealPlan(startD, endD)
-    setMeals(data)
+    const [mealData, favoriteData, cupboardData] = await Promise.all([
+      getMealPlan(startD, endD),
+      getFavoriteMeals(),
+      getCupboardItems(),
+    ])
+    setMeals(mealData)
+    setFavorites(favoriteData)
+    setCupboard(cupboardData)
     setLoading(false)
   }
 
@@ -902,22 +968,250 @@ function MealsTab() {
   const generate = async () => {
     setGenerating(true)
     try {
+      const weekStart = addDays(start, week * 7)
       const res = await fetch('/api/meals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: format(start, 'yyyy-MM-dd') }),
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({ startDate: format(weekStart, 'yyyy-MM-dd') }),
       })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Server error')
       }
       await load()
+      await clearShoppingChecks(format(weekStart, 'yyyy-MM-dd'))
+      setCheckedShopping({})
     } catch (err: any) {
       console.error('Generation failed:', err)
       alert('Generation failed: ' + err.message)
     } finally {
       setGenerating(false)
     }
+  }
+
+  const favoriteSet = new Set(favorites.map(f => f.meal_name))
+
+  const parseCupboardItems = (ingredients: { item: string; amount: string }[] | null) => {
+    const items: string[] = []
+    for (const ing of ingredients || []) {
+      const match = ing.item.match(/^(.*)\s+\(CUPBOARD\)$/i)
+      if (match && match[1]) items.push(match[1].trim())
+    }
+    return items
+  }
+
+  const parseAmount = (value: string | null | undefined) => {
+    if (!value) return null
+    const fractionMap: Record<string, string> = {
+      '¼': '0.25',
+      '½': '0.5',
+      '¾': '0.75',
+      '⅓': '0.3333',
+      '⅔': '0.6667',
+      '⅛': '0.125',
+      '⅜': '0.375',
+      '⅝': '0.625',
+      '⅞': '0.875',
+    }
+    let v = value.trim().toLowerCase()
+    v = v.replace(/(\d+)\s*([¼½¾⅓⅔⅛⅜⅝⅞])/g, (_, d, f) => String(Number(d) + Number(fractionMap[f])))
+    v = v.replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g, m => fractionMap[m])
+    const rangeMatch = v.match(/^([\d.,]+)\s*-\s*([\d.,]+)\s*([a-z]+)?/)
+    if (rangeMatch) {
+      const hi = parseFloat(rangeMatch[2].replace(',', '.'))
+      if (!Number.isNaN(hi)) {
+        return parseAmount(`${hi}${rangeMatch[3] ? ` ${rangeMatch[3]}` : ''}`)
+      }
+    }
+    const multMatch = v.match(/^(\d+)\s*x\s*([\d.,]+)\s*([a-z]+)?/)
+    if (multMatch) {
+      const count = parseInt(multMatch[1], 10)
+      const amt = parseFloat(multMatch[2].replace(',', '.'))
+      if (!Number.isNaN(count) && !Number.isNaN(amt)) {
+        return parseAmount(`${count * amt}${multMatch[3] ? ` ${multMatch[3]}` : ''}`)
+      }
+    }
+    const fracMatch = v.match(/^(\d+)\s*\/\s*(\d+)\s*([a-z]+)?/)
+    let num: number | null = null
+    let unit = ''
+    if (fracMatch) {
+      num = parseInt(fracMatch[1], 10) / parseInt(fracMatch[2], 10)
+      unit = fracMatch[3] || ''
+    } else {
+      const match = v.match(/^([\d.,]+)\s*([a-z]+)?/)
+      if (match) {
+        num = parseFloat(match[1].replace(',', '.'))
+        unit = match[2] || ''
+      }
+    }
+    if (!num || Number.isNaN(num)) return null
+    const unitMap: Record<string, string> = {
+      ml: 'ml', l: 'l', litre: 'l', liter: 'l', liters: 'l', litres: 'l',
+      g: 'g', kg: 'kg',
+      oz: 'oz', ounce: 'oz', ounces: 'oz',
+      lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb',
+      tin: 'tin', tins: 'tin', can: 'tin', cans: 'tin',
+      bottle: 'bottle', bottles: 'bottle',
+      pack: 'pack', packs: 'pack',
+      clove: 'clove', cloves: 'clove',
+      slice: 'slice', slices: 'slice',
+      piece: 'piece', pieces: 'piece',
+      tbsp: 'tbsp', tbsps: 'tbsp', tablespoon: 'tbsp', tablespoons: 'tbsp',
+      tsp: 'tsp', tsps: 'tsp', teaspoon: 'tsp', teaspoons: 'tsp',
+      cup: 'cup', cups: 'cup',
+    }
+    const normUnit = unitMap[unit] || unit
+    const type = normUnit === 'ml' || normUnit === 'l' ? 'vol'
+      : normUnit === 'g' || normUnit === 'kg' || normUnit === 'oz' || normUnit === 'lb' ? 'wt'
+        : normUnit ? 'count' : 'count'
+    return { value: num, unit: normUnit || 'count', type }
+  }
+
+  const toBase = (amt: { value: number; unit: string; type: string }) => {
+    if (amt.type === 'vol') return { value: amt.unit === 'l' ? amt.value * 1000 : amt.value, unit: 'ml', type: 'vol' }
+    if (amt.type === 'wt') {
+      if (amt.unit === 'kg') return { value: amt.value * 1000, unit: 'g', type: 'wt' }
+      if (amt.unit === 'lb') return { value: amt.value * 453.592, unit: 'g', type: 'wt' }
+      if (amt.unit === 'oz') return { value: amt.value * 28.3495, unit: 'g', type: 'wt' }
+      return { value: amt.value, unit: 'g', type: 'wt' }
+    }
+    return amt
+  }
+
+  const formatAmount = (value: number, unit: string, type: string) => {
+    if (type === 'vol') return `${Math.max(0, Math.round(value))}ml`
+    if (type === 'wt') return `${Math.max(0, Math.round(value))}g`
+    const rounded = Math.max(0, Math.round(value * 100) / 100)
+    return `${rounded} ${unit}`.trim()
+  }
+
+  const parseIngredientStore = (value: string) => {
+    const match = value.match(/^(.*)\s+\(([^)]+)\)$/)
+    if (match) return { item: match[1].trim(), store: match[2].trim().toUpperCase() }
+    return { item: value.trim(), store: 'EITHER' }
+  }
+
+  const consumeCupboard = async (ingredients: { item: string; amount: string }[] | null) => {
+    const cupboardItems = await getCupboardItems()
+    let updated = false
+    for (const ing of ingredients || []) {
+      const match = ing.item.match(/^(.*)\s+\(CUPBOARD\)$/i)
+      if (!match) continue
+      const itemName = match[1].trim().toLowerCase()
+      const ingredientAmt = parseAmount(ing.amount)
+      const candidates = cupboardItems
+        .filter(c => c.item.toLowerCase() === itemName)
+        .sort((a, b) => (a.expires_on || '').localeCompare(b.expires_on || ''))
+
+      if (!candidates.length) continue
+      if (!ingredientAmt) {
+        await deleteCupboardItem(candidates[0].id)
+        updated = true
+        continue
+      }
+
+      let remaining = toBase(ingredientAmt)
+      for (const c of candidates) {
+        const cupAmt = parseAmount(c.quantity || '')
+        if (!cupAmt) {
+          await deleteCupboardItem(c.id)
+          updated = true
+          break
+        }
+        const cupBase = toBase(cupAmt)
+        if (cupBase.type !== remaining.type || (cupBase.type === 'count' && cupBase.unit !== remaining.unit)) {
+          await deleteCupboardItem(c.id)
+          updated = true
+          break
+        }
+
+        const newValue = cupBase.value - remaining.value
+        if (newValue > 0) {
+          await updateCupboardItem(c.id, { quantity: formatAmount(newValue, cupBase.unit, cupBase.type) })
+          updated = true
+          break
+        } else {
+          await deleteCupboardItem(c.id)
+          updated = true
+          remaining = { ...remaining, value: Math.abs(newValue) }
+        }
+      }
+    }
+    if (updated) setCupboard(await getCupboardItems())
+  }
+
+  const handleFavorite = async (meal: MealPlan) => {
+    try {
+      await addFavoriteMeal({
+        meal_name: meal.meal_name,
+        meal_tag: meal.meal_tag,
+        prep_time_mins: meal.prep_time_mins,
+        source: meal.source,
+        recipe: meal.recipe,
+        ingredients: meal.ingredients,
+      })
+      setFavorites(await getFavoriteMeals())
+    } catch (err) {
+      console.error('Favorite failed:', err)
+      alert('Could not save favorite meal.')
+    }
+  }
+
+  const applyFavoriteToSlot = async (fav: FavoriteMeal) => {
+    if (!targetSlot) return
+    try {
+      await saveMealPlan([{
+        plan_date: targetSlot.date,
+        slot: targetSlot.slot,
+        meal_name: fav.meal_name,
+        meal_tag: fav.meal_tag,
+        prep_time_mins: fav.prep_time_mins,
+        source: fav.source,
+        recipe: fav.recipe,
+        ingredients: fav.ingredients,
+        shopping_tips: null,
+      }])
+      await consumeCupboard(fav.ingredients)
+      setTargetSlot(null)
+      setSelectMode(false)
+      const startD = format(start, 'yyyy-MM-dd')
+      const endD = format(addDays(start, 13), 'yyyy-MM-dd')
+      setMeals(await getMealPlan(startD, endD))
+    } catch (err) {
+      console.error('Apply favorite failed:', err)
+      alert('Could not apply favorite meal.')
+    }
+  }
+
+  const handleAddCupboard = async () => {
+    const item = cupItem.trim()
+    if (!item) return
+    try {
+      await addCupboardItem({
+        item,
+        quantity: cupQty.trim() || null,
+        notes: cupNotes.trim() || null,
+        expires_on: cupExpiry || null,
+      })
+      setCupItem('')
+      setCupQty('')
+      setCupExpiry('')
+      setCupNotes('')
+      setCupboard(await getCupboardItems())
+    } catch (err) {
+      console.error('Cupboard add failed:', err)
+      alert('Could not add cupboard item.')
+    }
+  }
+
+  const handleRemoveFavorite = async (id: string) => {
+    await removeFavoriteMeal(id)
+    setFavorites(await getFavoriteMeals())
+  }
+
+  const handleRemoveCupboard = async (id: string) => {
+    await deleteCupboardItem(id)
+    setCupboard(await getCupboardItems())
   }
 
   const days = Array.from({ length: 14 }, (_, i) => addDays(start, i))
@@ -933,6 +1227,85 @@ function MealsTab() {
   const tagClass = (m: MealPlan) => m.source === 'hf' ? 'mtag-hf' : m.source === 'gc' ? 'mtag-gc' : 'mtag-quick'
   const tagLabel = (m: MealPlan) => m.meal_tag === 'hf' ? 'HelloFresh' : m.meal_tag === 'gc' ? 'Green Chef' : '⚡ Quick'
 
+  const shoppingByStore = () => {
+    const entries: Record<string, { item: string; amount: string }[]> = {}
+    const mealLookup: MealPlan[] = []
+    for (const day of weekDays) {
+      const key = format(day, 'yyyy-MM-dd')
+      const lunch = mealMap[key]?.lunch
+      const dinner = mealMap[key]?.dinner
+      if (lunch) mealLookup.push(lunch)
+      if (dinner) mealLookup.push(dinner)
+    }
+
+    const agg: Record<string, { item: string; store: string; sum?: { value: number; unit: string; type: string }; amounts: string[]; sumPossible: boolean }> = {}
+
+    for (const meal of mealLookup) {
+      for (const ing of meal.ingredients || []) {
+        const { item, store } = parseIngredientStore(ing.item)
+        if (store === 'CUPBOARD') continue
+        const key = `${store}|${item}`.toLowerCase()
+        if (!agg[key]) {
+          agg[key] = { item, store, amounts: [], sumPossible: true }
+        }
+        const parsed = parseAmount(ing.amount)
+        if (!parsed) {
+          agg[key].sumPossible = false
+          agg[key].amounts.push(ing.amount)
+          continue
+        }
+        const base = toBase(parsed)
+        if (!agg[key].sum) {
+          agg[key].sum = base
+          continue
+        }
+        if (agg[key].sum.type !== base.type || (base.type === 'count' && agg[key].sum.unit !== base.unit)) {
+          agg[key].sumPossible = false
+          agg[key].amounts.push(ing.amount)
+          continue
+        }
+        agg[key].sum.value += base.value
+      }
+    }
+
+    for (const key of Object.keys(agg)) {
+      const entry = agg[key]
+      const amount = entry.sumPossible && entry.sum
+        ? formatAmount(entry.sum.value, entry.sum.unit, entry.sum.type)
+        : entry.amounts.join(', ')
+      entries[entry.store] = entries[entry.store] || []
+      entries[entry.store].push({ item: entry.item, amount })
+    }
+
+    return entries
+  }
+
+  const shopping = shoppingByStore()
+  const shoppingStores = Object.keys(shopping)
+  const weekStartKey = format(addDays(start, week * 7), 'yyyy-MM-dd')
+  useEffect(() => {
+    const loadChecks = async () => {
+      const rows = await getShoppingChecks(weekStartKey)
+      const map: Record<string, boolean> = {}
+      for (const r of rows) {
+        const k = `${r.store}|${r.item}`.toLowerCase()
+        map[k] = r.is_checked
+      }
+      setCheckedShopping(map)
+    }
+    loadChecks()
+  }, [weekStartKey])
+
+  const toggleShopping = async (key: string, store: string, item: string) => {
+    const next = !checkedShopping[key]
+    setCheckedShopping(prev => ({ ...prev, [key]: next }))
+    try {
+      await upsertShoppingCheck(weekStartKey, store, item, next)
+    } catch (err) {
+      console.error('Shopping check failed:', err)
+    }
+  }
+
   return (
     <div>
       <div className="section-hdr">
@@ -941,7 +1314,7 @@ function MealsTab() {
           <p className="section-sub">AI-generated · 2-week rolling · stored in Supabase</p>
         </div>
         <button className="btn-out" onClick={generate} disabled={generating}>
-          {generating ? '⏳ Generating…' : '✨ Generate with AI'}
+          {generating ? '⏳ Generating…' : '✨ Generate for This Week'}
         </button>
       </div>
       <div className="week-tabs">
@@ -978,13 +1351,23 @@ function MealsTab() {
                   <div className="meal-day-name">{DAYS[day.getDay()]}</div>
                   <div className="meal-day-date">{fmt(day)}</div>
                 </div>
-                {[['lunch', 'Lunch', lunch], ['dinner', 'Dinner', dinner]].map(([slot, label, meal]) => (
-                  <div key={slot as string} className="meal-slot"
-                    onClick={() => meal && setSelectedMeal(meal as MealPlan)}
-                    style={{ cursor: meal ? 'pointer' : 'default', transition: 'background 0.1s' }}
-                    onMouseEnter={e => meal && (e.currentTarget.style.background = 'rgba(193,113,79,0.05)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
+                {[['lunch', 'Lunch', lunch], ['dinner', 'Dinner', dinner]].map(([slot, label, meal]) => {
+                  const slotKey = slot as 'lunch' | 'dinner'
+                  const isSelected = targetSlot?.date === key && targetSlot?.slot === slotKey
+                  return (
+                    <div
+                      key={slotKey}
+                      className={`meal-slot selectable${isSelected ? ' selected' : ''}`}
+                      onClick={() => {
+                        if (selectMode) {
+                          setTargetSlot({ date: key, slot: slotKey })
+                        } else if (meal) {
+                          setSelectedMeal(meal as MealPlan)
+                        } else {
+                          setTargetSlot({ date: key, slot: slotKey })
+                        }
+                      }}
+                    >
                     <div className="meal-slot-lbl">{label as string}</div>
                     {meal ? (
                       <>
@@ -994,14 +1377,129 @@ function MealsTab() {
                     ) : (
                       <div className="meal-empty">Not set</div>
                     )}
+                    {isSelected && <div className="meal-slot-selected-tag">Selected for favorite</div>}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )
           })}
         </div>
       )}
-      {selectedMeal && <MealRecipeModal meal={selectedMeal} onClose={() => setSelectedMeal(null)} />}
+      {selectedMeal && (
+        <MealRecipeModal
+          meal={selectedMeal}
+          onClose={() => setSelectedMeal(null)}
+          onFavorite={() => handleFavorite(selectedMeal)}
+          isFavorited={favoriteSet.has(selectedMeal.meal_name)}
+        />
+      )}
+      <div className="card" style={{ marginTop: '1.2rem' }}>
+        <div className="card-title">🛒 Shopping List</div>
+        {shoppingStores.length === 0 ? (
+          <div className="section-sub">No shopping needed for this week (everything is from the cupboard).</div>
+        ) : (
+          <div className="tool-list">
+            {shoppingStores.map(store => (
+              <div key={store} className="tool-row" style={{ alignItems: 'flex-start', flexDirection: 'column' }}>
+                <div className="tool-title" style={{ marginBottom: '.4rem' }}>{store}</div>
+                <div className="tool-list" style={{ width: '100%' }}>
+                  {shopping[store].map(i => {
+                    const key = `${store}|${i.item}`.toLowerCase()
+                    const checked = !!checkedShopping[key]
+                    return (
+                      <label key={key} className="tool-row" style={{ alignItems: 'center', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleShopping(key, store, i.item)}
+                          style={{ marginRight: '.6rem' }}
+                        />
+                        <div style={{ textDecoration: checked ? 'line-through' : 'none', color: checked ? 'var(--grey)' : 'var(--charcoal)' }}>
+                          {i.item}{i.amount ? ` — ${i.amount}` : ''}
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="meal-tools">
+        <div className="card">
+          <div className="card-title">⭐ Favorites</div>
+          {targetSlot ? (
+            <div className="section-sub" style={{ marginBottom: '.6rem' }}>
+              Using slot: {format(new Date(targetSlot.date), 'EEE d MMM')} · {targetSlot.slot}
+            </div>
+          ) : (
+            <div className="section-sub" style={{ marginBottom: '.6rem' }}>
+              Click an empty slot to select where a favorite should go.
+            </div>
+          )}
+          {favorites.length === 0 ? (
+            <div className="section-sub">No favorites yet. Open a meal and tap “Add to Favorites”.</div>
+          ) : (
+            <div className="tool-list">
+              {favorites.map(fav => (
+                <div key={fav.id} className="tool-row">
+                  <div>
+                    <div className="tool-title">{fav.meal_name}</div>
+                    <div className="tool-sub">{fav.meal_tag} · {fav.prep_time_mins} mins</div>
+                  </div>
+                  <div className="tool-actions">
+                    <button className="btn-out" disabled={!targetSlot} onClick={() => applyFavoriteToSlot(fav)}>
+                      Use
+                    </button>
+                    <button className="btn-out" onClick={() => handleRemoveFavorite(fav.id)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop: '.8rem', display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+            <button className="btn-out" onClick={() => setSelectMode(s => !s)}>
+              {selectMode ? 'Stop Selecting' : 'Select Slot'}
+            </button>
+            {selectMode && <div className="section-sub">Click any slot to replace it with a favorite.</div>}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-title">🥫 Cupboard</div>
+          <div className="tool-input-row" style={{ marginBottom: '.8rem' }}>
+            <input className="tool-input" placeholder="Item" value={cupItem} onChange={e => setCupItem(e.target.value)} />
+            <input className="tool-input" placeholder="Amount (optional) e.g. 300ml, 2 tins" value={cupQty} onChange={e => setCupQty(e.target.value)} />
+            <input className="tool-input" type="date" value={cupExpiry} onChange={e => setCupExpiry(e.target.value)} />
+            <input className="tool-input" placeholder="Notes (optional)" value={cupNotes} onChange={e => setCupNotes(e.target.value)} />
+            <button className="btn-solid" onClick={handleAddCupboard}>Add</button>
+          </div>
+          {cupboard.length === 0 ? (
+            <div className="section-sub">No cupboard items yet. Add items above.</div>
+          ) : (
+            <div className="tool-list">
+              {cupboard.map(item => (
+                <div key={item.id} className="tool-row">
+                  <div>
+                    <div className="tool-title">{item.item}</div>
+                    <div className="tool-sub">
+                      {(item.quantity || 'Amount not set')}
+                      {item.expires_on ? ` · Expires ${item.expires_on}` : ''}
+                      {item.notes ? ` · ${item.notes}` : ''}
+                    </div>
+                  </div>
+                  <div className="tool-actions">
+                    <button className="btn-out" onClick={() => handleRemoveCupboard(item.id)}>Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1038,7 +1536,9 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
         if (calUrl2) params.set('url2', calUrl2)
         params.set('name1', nameA)
         params.set('name2', nameB)
-        const res = await fetch(`/api/calendar?${params.toString()}`)
+        const res = await fetch(`/api/calendar?${params.toString()}`, {
+          headers: { ...(await authHeaders()) },
+        })
         const data = await res.json()
         googleEvents = (data.events || []).map((e: any) => ({
           ...e,
@@ -1246,7 +1746,7 @@ function AITab({ chores, bills, notifications }: { chores: any[]; bills: Bill[];
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ messages: newMsgs, homeContext }),
       })
       const data = await res.json()
@@ -1516,7 +2016,7 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
     }).eq('id', hh.id)
     await fetch('/api/notify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({
         botToken, chatId, message: `🏡 <b>Hearth Test</b>
 
@@ -1545,7 +2045,9 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
       const params = new URLSearchParams()
       if (calUrl1) params.set('url1', calUrl1)
       if (calUrl2) params.set('url2', calUrl2)
-      const res = await fetch(`/api/calendar?${params.toString()}`)
+      const res = await fetch(`/api/calendar?${params.toString()}`, {
+        headers: { ...(await authHeaders()) },
+      })
       const data = await res.json()
       if (data.error) throw new Error('Calendar fetch failed: ' + data.error)
       setBusyDays(data.busyDays || [])
@@ -1694,6 +2196,13 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [authEmail, setAuthEmail] = useState('')
+  const [authSent, setAuthSent] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+
   const [tab, setTab] = useState('overview')
   const [chores, setChores] = useState<any[]>([])
   const [bills, setBills] = useState<Bill[]>([])
@@ -1715,22 +2224,14 @@ export default function App() {
     // Fetch household directly — same pattern as SettingsTab which is confirmed working
     try {
       const { data: h } = await supabase
-        .from('households')
-        .select('*')
-        .eq('id', HOUSEHOLD_ID)
-        .single()
-      if (h) {
+      .from('households')
+      .select('*')
+      .eq('id', HOUSEHOLD_ID)
+      .single()
+    if (h) {
         setHousehold(h)
         setNameA(h.person_a_name || 'Person A')
         setNameB(h.person_b_name || 'Person B')
-      } else {
-        // Fallback: grab first row
-        const { data: h2 } = await supabase.from('households').select('*').limit(1).single()
-        if (h2) {
-          setHousehold(h2)
-          setNameA(h2.person_a_name || 'Person A')
-          setNameB(h2.person_b_name || 'Person B')
-        }
       }
     } catch (e) {
       console.error('Failed to fetch household:', e)
@@ -1738,6 +2239,19 @@ export default function App() {
   }
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setAuthReady(true)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setAuthReady(true)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
     loadAll()
     // Request browser notification permission
     if ('Notification' in window && Notification.permission === 'default') {
@@ -1754,7 +2268,28 @@ export default function App() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [session])
+
+  const handleSignIn = async () => {
+    if (!authEmail) return
+    setAuthLoading(true)
+    setAuthError('')
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail,
+      options: { emailRedirectTo: window.location.origin },
+    })
+    setAuthLoading(false)
+    if (error) {
+      setAuthError(error.message)
+      setAuthSent(false)
+      return
+    }
+    setAuthSent(true)
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
 
   const handleMarkDone = async (id: string) => {
     await markChoreDone(id)
@@ -1803,6 +2338,48 @@ export default function App() {
     setBills(updated)
   }
 
+  if (!authReady) {
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{ __html: STYLE }} />
+        <div className="auth-wrap">
+          <div className="auth-card">
+            <div className="auth-title">Hearth</div>
+            <div className="auth-sub">Loading…</div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  if (!session) {
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{ __html: STYLE }} />
+        <div className="auth-wrap">
+          <div className="auth-card">
+            <div className="auth-title">Hearth</div>
+            <div className="auth-sub">Sign in to access your household</div>
+            <div className="auth-form">
+              <input
+                className="auth-input"
+                type="email"
+                placeholder="you@example.com"
+                value={authEmail}
+                onChange={e => setAuthEmail(e.target.value)}
+              />
+              <button className="auth-btn" onClick={handleSignIn} disabled={authLoading || !authEmail}>
+                {authLoading ? 'Sending link…' : 'Send Magic Link'}
+              </button>
+              {authSent && <div className="auth-msg">Check your email for the sign-in link.</div>}
+              {authError && <div className="auth-error">{authError}</div>}
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   const overdue = chores.filter(c => choreStatus(c) === 'overdue').length
   const urgentBills = bills.filter(b => b.renewal_date && Math.round((new Date(b.renewal_date).getTime() - Date.now()) / 86400000) <= 60).length
   const unread = notifications.filter(n => !n.is_read).length
@@ -1839,6 +2416,7 @@ export default function App() {
               onClick={() => setTab('settings')}>
               {household?.telegram_bot_token ? '📱 Telegram ✓' : '📱 Setup Alerts'}
             </button>
+            <button className="hdr-logout" onClick={handleSignOut}>Sign Out</button>
             <div className="hdr-date">
               <strong>{today.toLocaleDateString('en-GB', { weekday: 'long' })}</strong>
               {today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}

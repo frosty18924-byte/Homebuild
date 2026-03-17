@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/server-auth'
 
 const DEAL_PROMPTS: Record<string, string> = {
   mortgage: 'UK mortgage deals fixed rate 2 and 5 year best rates today',
@@ -18,6 +19,11 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   try {
+    const user = await requireAuth(req)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { billId, billType, provider, monthlyAmountPence } = await req.json()
 
     const searchQuery = DEAL_PROMPTS[billType] || `UK ${billType} best deals today`
