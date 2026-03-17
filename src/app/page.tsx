@@ -1964,6 +1964,8 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
   const [memberRole, setMemberRole] = useState<'member' | 'owner'>('member')
   const [memberError, setMemberError] = useState('')
   const [memberLoading, setMemberLoading] = useState(false)
+  const [tempPasswords, setTempPasswords] = useState<Record<string, string>>({})
+  const [resetLoading, setResetLoading] = useState<Record<string, boolean>>({})
 
   // Load directly from Supabase so we always get fresh data including calendar URLs
   useEffect(() => {
@@ -2102,6 +2104,25 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
     }
   }
 
+  const resetMemberPassword = async (userId: string) => {
+    setMemberError('')
+    setResetLoading(s => ({ ...s, [userId]: true }))
+    try {
+      const res = await fetch('/api/members', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({ user_id: userId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not reset password')
+      setTempPasswords(prev => ({ ...prev, [userId]: data.tempPassword }))
+    } catch (err: any) {
+      setMemberError(err.message || 'Could not reset password')
+    } finally {
+      setResetLoading(s => ({ ...s, [userId]: false }))
+    }
+  }
+
   return (
     <div>
       <div className="section-hdr">
@@ -2184,8 +2205,18 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
             <div className="section-sub">No members found.</div>
           ) : (
             members.map(m => (
-              <div key={m.user_id} style={{ fontSize: '.8rem', color: 'var(--charcoal)' }}>
-                {m.email || m.user_id} — <span style={{ color: 'var(--grey)' }}>{m.role}</span>
+              <div key={m.user_id} style={{ fontSize: '.8rem', color: 'var(--charcoal)', display: 'flex', alignItems: 'center', gap: '.6rem', flexWrap: 'wrap' }}>
+                <div>
+                  {m.email || m.user_id} — <span style={{ color: 'var(--grey)' }}>{m.role}</span>
+                </div>
+                <button className="btn-out" onClick={() => resetMemberPassword(m.user_id)} disabled={!!resetLoading[m.user_id]}>
+                  {resetLoading[m.user_id] ? 'Resetting…' : 'Reset Password'}
+                </button>
+                {tempPasswords[m.user_id] && (
+                  <div style={{ fontSize: '.72rem', color: 'var(--terra)' }}>
+                    Temp password: <strong>{tempPasswords[m.user_id]}</strong>
+                  </div>
+                )}
               </div>
             ))
           )}

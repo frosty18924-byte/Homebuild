@@ -85,3 +85,46 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true })
 }
+
+export async function PATCH(req: NextRequest) {
+  const user = await requireAuth(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const householdId = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
+  const supabase = supabaseAdmin()
+
+  const { data: me } = await supabase
+    .from('household_members')
+    .select('role')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+  if (!me) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (me.role !== 'owner') return NextResponse.json({ error: 'Only owners can reset passwords' }, { status: 403 })
+
+  const { user_id } = await req.json()
+  if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 })
+
+  const { data: member } = await supabase
+    .from('household_members')
+    .select('user_id')
+    .eq('household_id', householdId)
+    .eq('user_id', user_id)
+    .maybeSingle()
+  if (!member) return NextResponse.json({ error: 'User not in household' }, { status: 404 })
+
+  const tempPassword = generateTempPassword()
+  const { error } = await supabase.auth.admin.updateUserById(user_id, { password: tempPassword })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ tempPassword })
+}
+
+function generateTempPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%&*'
+  let out = ''
+  for (let i = 0; i < 14; i++) {
+    out += alphabet[Math.floor(Math.random() * alphabet.length)]
+  }
+  return out
+}
