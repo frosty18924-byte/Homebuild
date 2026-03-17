@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import {
   supabase, HOUSEHOLD_ID,
@@ -2196,12 +2197,10 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const router = useRouter()
+  const pathname = usePathname()
   const [session, setSession] = useState<Session | null>(null)
   const [authReady, setAuthReady] = useState(false)
-  const [authEmail, setAuthEmail] = useState('')
-  const [authSent, setAuthSent] = useState(false)
-  const [authError, setAuthError] = useState('')
-  const [authLoading, setAuthLoading] = useState(false)
 
   const [tab, setTab] = useState('overview')
   const [chores, setChores] = useState<any[]>([])
@@ -2251,6 +2250,13 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (!authReady) return
+    if (!session && pathname !== '/login') {
+      router.replace('/login')
+    }
+  }, [authReady, session, pathname, router])
+
+  useEffect(() => {
     if (!session) return
     loadAll()
     // Request browser notification permission
@@ -2269,23 +2275,6 @@ export default function App() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [session])
-
-  const handleSignIn = async () => {
-    if (!authEmail) return
-    setAuthLoading(true)
-    setAuthError('')
-    const { error } = await supabase.auth.signInWithOtp({
-      email: authEmail,
-      options: { emailRedirectTo: window.location.origin },
-    })
-    setAuthLoading(false)
-    if (error) {
-      setAuthError(error.message)
-      setAuthSent(false)
-      return
-    }
-    setAuthSent(true)
-  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -2359,21 +2348,7 @@ export default function App() {
         <div className="auth-wrap">
           <div className="auth-card">
             <div className="auth-title">Hearth</div>
-            <div className="auth-sub">Sign in to access your household</div>
-            <div className="auth-form">
-              <input
-                className="auth-input"
-                type="email"
-                placeholder="you@example.com"
-                value={authEmail}
-                onChange={e => setAuthEmail(e.target.value)}
-              />
-              <button className="auth-btn" onClick={handleSignIn} disabled={authLoading || !authEmail}>
-                {authLoading ? 'Sending link…' : 'Send Magic Link'}
-              </button>
-              {authSent && <div className="auth-msg">Check your email for the sign-in link.</div>}
-              {authError && <div className="auth-error">{authError}</div>}
-            </div>
+            <div className="auth-sub">Redirecting to login…</div>
           </div>
         </div>
       </>
