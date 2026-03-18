@@ -114,6 +114,8 @@ export type ShoppingCheck = {
   store: string
   item: string
   is_checked: boolean
+  bought_amount: string | null
+  added_to_cupboard: boolean
   updated_at: string
 }
 
@@ -348,17 +350,26 @@ export async function getShoppingChecks(weekStart: string) {
   return (data || []) as ShoppingCheck[]
 }
 
-export async function upsertShoppingCheck(weekStart: string, store: string, item: string, isChecked: boolean) {
+export async function upsertShoppingCheck(
+  weekStart: string,
+  store: string,
+  item: string,
+  isChecked: boolean,
+  opts?: { boughtAmount?: string | null; addedToCupboard?: boolean }
+) {
+  const payload: any = {
+    household_id: HOUSEHOLD_ID,
+    week_start: weekStart,
+    store,
+    item,
+    is_checked: isChecked,
+    updated_at: new Date().toISOString(),
+  }
+  if (opts?.boughtAmount !== undefined) payload.bought_amount = opts.boughtAmount
+  if (opts?.addedToCupboard !== undefined) payload.added_to_cupboard = opts.addedToCupboard
   const { data, error } = await supabase
     .from('shopping_checks')
-    .upsert({
-      household_id: HOUSEHOLD_ID,
-      week_start: weekStart,
-      store,
-      item,
-      is_checked: isChecked,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'household_id,week_start,store,item' })
+    .upsert(payload, { onConflict: 'household_id,week_start,store,item' })
     .select()
     .single()
   if (error) throw error

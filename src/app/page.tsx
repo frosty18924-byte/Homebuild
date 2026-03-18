@@ -870,11 +870,13 @@ function MealRecipeModal({
   onClose,
   onFavorite,
   isFavorited,
+  onCooked,
 }: {
   meal: MealPlan
   onClose: () => void
   onFavorite: () => void
   isFavorited: boolean
+  onCooked: () => void
 }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -924,6 +926,9 @@ function MealRecipeModal({
           <button className="btn-out" onClick={onFavorite} disabled={isFavorited}>
             {isFavorited ? '★ Favorited' : '☆ Add to Favorites'}
           </button>
+          <button className="btn-out" onClick={onCooked}>
+            Cooked — remove from cupboard
+          </button>
           <button className="btn-solid" style={{ flex: 1 }} onClick={onClose}>Done</button>
         </div>
       </div>
@@ -946,7 +951,7 @@ function MealsTab() {
   const [cupQty, setCupQty] = useState('')
   const [cupExpiry, setCupExpiry] = useState('')
   const [cupNotes, setCupNotes] = useState('')
-  const [checkedShopping, setCheckedShopping] = useState<Record<string, boolean>>({})
+  const [shoppingChecks, setShoppingChecks] = useState<Record<string, { checked: boolean; boughtAmount: string; savedAmount: string; addedToCupboard: boolean }>>({})
   const start = startOfToday()
 
   const load = async () => {
@@ -981,7 +986,7 @@ function MealsTab() {
       }
       await load()
       await clearShoppingChecks(format(weekStart, 'yyyy-MM-dd'))
-      setCheckedShopping({})
+      setShoppingChecks({})
     } catch (err: any) {
       console.error('Generation failed:', err)
       alert('Generation failed: ' + err.message)
@@ -1141,6 +1146,54 @@ function MealsTab() {
     if (updated) setCupboard(await getCupboardItems())
   }
 
+  const consumeMealFromCupboard = async (ingredients: { item: string; amount: string }[] | null) => {
+    const cupboardItems = await getCupboardItems()
+    let updated = false
+    for (const ing of ingredients || []) {
+      const itemName = ing.item.replace(/\s*\([^)]+\)\s*$/, '').trim().toLowerCase()
+      if (!itemName) continue
+      const ingredientAmt = parseAmount(ing.amount)
+      const candidates = cupboardItems
+        .filter(c => c.item.toLowerCase() === itemName)
+        .sort((a, b) => (a.expires_on || '').localeCompare(b.expires_on || ''))
+
+      if (!candidates.length) continue
+      if (!ingredientAmt) {
+        await deleteCupboardItem(candidates[0].id)
+        updated = true
+        continue
+      }
+
+      let remaining = toBase(ingredientAmt)
+      for (const c of candidates) {
+        const cupAmt = parseAmount(c.quantity || '')
+        if (!cupAmt) {
+          await deleteCupboardItem(c.id)
+          updated = true
+          break
+        }
+        const cupBase = toBase(cupAmt)
+        if (cupBase.type !== remaining.type || (cupBase.type === 'count' && cupBase.unit !== remaining.unit)) continue
+        const newValue = cupBase.value - remaining.value
+        if (newValue > 0) {
+          await updateCupboardItem(c.id, { quantity: formatAmount(newValue, cupBase.unit, cupBase.type) })
+          updated = true
+          break
+        } else {
+          await deleteCupboardItem(c.id)
+          updated = true
+          remaining = { ...remaining, value: Math.abs(newValue) }
+        }
+      }
+    }
+    if (updated) setCupboard(await getCupboardItems())
+  }
+
+  const handleMealCooked = async (meal: MealPlan) => {
+    await consumeMealFromCupboard(meal.ingredients)
+    setSelectedMeal(null)
+  }
+
   const handleFavorite = async (meal: MealPlan) => {
     try {
       await addFavoriteMeal({
@@ -1287,23 +1340,131 @@ function MealsTab() {
   useEffect(() => {
     const loadChecks = async () => {
       const rows = await getShoppingChecks(weekStartKey)
-      const map: Record<string, boolean> = {}
+      const map: Record<string, { checked: boolean; boughtAmount: string; savedAmount: string; addedToCupboard: boolean }> = {}
       for (const r of rows) {
         const k = `${r.store}|${r.item}`.toLowerCase()
-        map[k] = r.is_checked
+        const bought = r.bought_amount || ''
+        map[k] = {
+          checked: r.is_checked,
+          boughtAmount: bought,
+          savedAmount: bought,
+          addedToCupboard: !!r.added_to_cupboard,
+        }
       }
-      setCheckedShopping(map)
+      setShoppingChecks(map)
     }
     loadChecks()
   }, [weekStartKey])
 
-  const toggleShopping = async (key: string, store: string, item: string) => {
-    const next = !checkedShopping[key]
-    setCheckedShopping(prev => ({ ...prev, [key]: next }))
+  const setShoppingCheckState = (
+    key: string,
+    updates: Partial<{ checked: boolean; boughtAmount: string; savedAmount: string; addedToCupboard: boolean }>
+  ) => {
+    setShoppingChecks(prev => {
+      const existing = prev[key] || { checked: false, boughtAmount: '', savedAmount: '', addedToCupboard: false }
+      return { ...prev, [key]: { ...existing, ...updates } }
+    })
+  }
+
+  const addShoppingToCupboard = async (itemName: string, amount: string | null) => {
+    const qty = (amount || '').trim()
+    const cupboardItems = cupboard
+    const normalizedName = itemName.trim()
+    const candidates = cupboardItems.filter(c => c.item.toLowerCase() === normalizedName.toLowerCase())
+
+    if (!qty) {
+      await addCupboardItem({ item: normalizedName, quantity: null, notes: 'From shopping', expires_on: null })
+      setCupboard(await getCupboardItems())
+      return
+    }
+
+    const addAmt = parseAmount(qty)
+    if (addAmt) {
+      const addBase = toBase(addAmt)
+      for (const c of candidates) {
+        const cupAmt = parseAmount(c.quantity || '')
+        if (!cupAmt) continue
+        const cupBase = toBase(cupAmt)
+        if (cupBase.type !== addBase.type || (cupBase.type === 'count' && cupBase.unit !== addBase.unit)) continue
+        const newValue = cupBase.value + addBase.value
+        await updateCupboardItem(c.id, { quantity: formatAmount(newValue, cupBase.unit, cupBase.type) })
+        setCupboard(await getCupboardItems())
+        return
+      }
+    }
+
+    await addCupboardItem({ item: normalizedName, quantity: qty, notes: 'From shopping', expires_on: null })
+    setCupboard(await getCupboardItems())
+  }
+
+  const adjustCupboardForShoppingDelta = async (itemName: string, prevAmount: string, nextAmount: string) => {
+    const prev = parseAmount(prevAmount)
+    const next = parseAmount(nextAmount)
+    if (!prev || !next) return
+    const prevBase = toBase(prev)
+    const nextBase = toBase(next)
+    if (prevBase.type !== nextBase.type || (prevBase.type === 'count' && prevBase.unit !== nextBase.unit)) return
+    const delta = nextBase.value - prevBase.value
+    if (delta === 0) return
+    if (delta > 0) {
+      await addShoppingToCupboard(itemName, formatAmount(delta, nextBase.unit, nextBase.type))
+    } else {
+      await consumeCupboard([{ item: `${itemName} (CUPBOARD)`, amount: formatAmount(Math.abs(delta), nextBase.unit, nextBase.type) }])
+    }
+  }
+
+  const toggleShopping = async (key: string, store: string, item: string, neededAmount: string) => {
+    const current = shoppingChecks[key]
+    const nextChecked = !current?.checked
+    const boughtAmount = (current?.boughtAmount || neededAmount || '').trim()
+    setShoppingCheckState(key, { checked: nextChecked, boughtAmount })
+    const shouldAddToCupboard = nextChecked && !current?.addedToCupboard
     try {
-      await upsertShoppingCheck(weekStartKey, store, item, next)
+      await upsertShoppingCheck(weekStartKey, store, item, nextChecked, {
+        boughtAmount: boughtAmount || null,
+        addedToCupboard: current?.addedToCupboard,
+      })
     } catch (err) {
       console.error('Shopping check failed:', err)
+    }
+
+    if (shouldAddToCupboard) {
+      try {
+        await addShoppingToCupboard(item, boughtAmount || null)
+        setShoppingCheckState(key, { addedToCupboard: true, savedAmount: boughtAmount })
+        try {
+          await upsertShoppingCheck(weekStartKey, store, item, true, {
+            boughtAmount: boughtAmount || null,
+            addedToCupboard: true,
+          })
+        } catch (err) {
+          console.error('Shopping check update failed:', err)
+        }
+      } catch (err) {
+        console.error('Add to cupboard failed:', err)
+      }
+    } else if (nextChecked) {
+      setShoppingCheckState(key, { savedAmount: boughtAmount })
+    }
+  }
+
+  const saveBoughtAmount = async (key: string, store: string, item: string, neededAmount: string) => {
+    const current = shoppingChecks[key]
+    if (!current?.checked) return
+    const nextAmount = (current.boughtAmount || neededAmount || '').trim()
+    const prevAmount = (current.savedAmount || '').trim()
+    if (nextAmount === prevAmount) return
+    try {
+      await upsertShoppingCheck(weekStartKey, store, item, true, {
+        boughtAmount: nextAmount || null,
+        addedToCupboard: current.addedToCupboard,
+      })
+      if (current.addedToCupboard) {
+        await adjustCupboardForShoppingDelta(item, prevAmount, nextAmount)
+      }
+      setShoppingCheckState(key, { savedAmount: nextAmount })
+    } catch (err) {
+      console.error('Shopping amount update failed:', err)
     }
   }
 
@@ -1393,6 +1554,7 @@ function MealsTab() {
           onClose={() => setSelectedMeal(null)}
           onFavorite={() => handleFavorite(selectedMeal)}
           isFavorited={favoriteSet.has(selectedMeal.meal_name)}
+          onCooked={() => handleMealCooked(selectedMeal)}
         />
       )}
       <div className="card" style={{ marginTop: '1.2rem' }}>
@@ -1407,21 +1569,64 @@ function MealsTab() {
                 <div className="tool-list" style={{ width: '100%' }}>
                   {shopping[store].map(i => {
                     const key = `${store}|${i.item}`.toLowerCase()
-                    const checked = !!checkedShopping[key]
+                    const state = shoppingChecks[key]
+                    const checked = !!state?.checked
+                    const boughtAmount = state?.boughtAmount ?? ''
                     return (
                       <label key={key} className="tool-row" style={{ alignItems: 'center', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => toggleShopping(key, store, i.item)}
+                          onChange={() => toggleShopping(key, store, i.item, i.amount)}
                           style={{ marginRight: '.6rem' }}
                         />
                         <div style={{ textDecoration: checked ? 'line-through' : 'none', color: checked ? 'var(--grey)' : 'var(--charcoal)' }}>
                           {i.item}{i.amount ? ` — ${i.amount}` : ''}
                         </div>
+                        {checked && (
+                          <input
+                            className="tool-input"
+                            style={{ marginLeft: '1rem', maxWidth: '160px' }}
+                            placeholder="Bought (e.g. 4)"
+                            value={boughtAmount || i.amount || ''}
+                            onChange={e => setShoppingCheckState(key, { boughtAmount: e.target.value })}
+                            onBlur={() => saveBoughtAmount(key, store, i.item, i.amount)}
+                          />
+                        )}
                       </label>
                     )
                   })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="card" style={{ marginTop: '1.2rem' }}>
+        <div className="card-title">🥫 Cupboard</div>
+        <div className="tool-input-row" style={{ marginBottom: '.8rem' }}>
+          <input className="tool-input" placeholder="Item" value={cupItem} onChange={e => setCupItem(e.target.value)} />
+          <input className="tool-input" placeholder="Amount (optional) e.g. 300ml, 2 tins" value={cupQty} onChange={e => setCupQty(e.target.value)} />
+          <input className="tool-input" type="date" value={cupExpiry} onChange={e => setCupExpiry(e.target.value)} />
+          <input className="tool-input" placeholder="Notes (optional)" value={cupNotes} onChange={e => setCupNotes(e.target.value)} />
+          <button className="btn-solid" onClick={handleAddCupboard}>Add</button>
+        </div>
+        {cupboard.length === 0 ? (
+          <div className="section-sub">No cupboard items yet. Add items above.</div>
+        ) : (
+          <div className="tool-list">
+            {cupboard.map(item => (
+              <div key={item.id} className="tool-row">
+                <div>
+                  <div className="tool-title">{item.item}</div>
+                  <div className="tool-sub">
+                    {(item.quantity || 'Amount not set')}
+                    {item.expires_on ? ` · Expires ${item.expires_on}` : ''}
+                    {item.notes ? ` · ${item.notes}` : ''}
+                  </div>
+                </div>
+                <div className="tool-actions">
+                  <button className="btn-out" onClick={() => handleRemoveCupboard(item.id)}>Remove</button>
                 </div>
               </div>
             ))}
@@ -1468,37 +1673,6 @@ function MealsTab() {
             </button>
             {selectMode && <div className="section-sub">Click any slot to replace it with a favorite.</div>}
           </div>
-        </div>
-        <div className="card">
-          <div className="card-title">🥫 Cupboard</div>
-          <div className="tool-input-row" style={{ marginBottom: '.8rem' }}>
-            <input className="tool-input" placeholder="Item" value={cupItem} onChange={e => setCupItem(e.target.value)} />
-            <input className="tool-input" placeholder="Amount (optional) e.g. 300ml, 2 tins" value={cupQty} onChange={e => setCupQty(e.target.value)} />
-            <input className="tool-input" type="date" value={cupExpiry} onChange={e => setCupExpiry(e.target.value)} />
-            <input className="tool-input" placeholder="Notes (optional)" value={cupNotes} onChange={e => setCupNotes(e.target.value)} />
-            <button className="btn-solid" onClick={handleAddCupboard}>Add</button>
-          </div>
-          {cupboard.length === 0 ? (
-            <div className="section-sub">No cupboard items yet. Add items above.</div>
-          ) : (
-            <div className="tool-list">
-              {cupboard.map(item => (
-                <div key={item.id} className="tool-row">
-                  <div>
-                    <div className="tool-title">{item.item}</div>
-                    <div className="tool-sub">
-                      {(item.quantity || 'Amount not set')}
-                      {item.expires_on ? ` · Expires ${item.expires_on}` : ''}
-                      {item.notes ? ` · ${item.notes}` : ''}
-                    </div>
-                  </div>
-                  <div className="tool-actions">
-                    <button className="btn-out" onClick={() => handleRemoveCupboard(item.id)}>Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>
