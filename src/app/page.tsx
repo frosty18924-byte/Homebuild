@@ -951,6 +951,7 @@ function MealsTab() {
   const [cupQty, setCupQty] = useState('')
   const [cupExpiry, setCupExpiry] = useState('')
   const [cupNotes, setCupNotes] = useState('')
+  const [cupboardEdits, setCupboardEdits] = useState<Record<string, string>>({})
   const [shoppingChecks, setShoppingChecks] = useState<Record<string, { checked: boolean; boughtAmount: string; savedAmount: string; addedToCupboard: boolean }>>({})
   const start = startOfToday()
 
@@ -1265,6 +1266,12 @@ function MealsTab() {
 
   const handleRemoveCupboard = async (id: string) => {
     await deleteCupboardItem(id)
+    setCupboard(await getCupboardItems())
+  }
+
+  const handleSaveCupboardQty = async (id: string) => {
+    const qty = (cupboardEdits[id] ?? '').trim()
+    await updateCupboardItem(id, { quantity: qty || null })
     setCupboard(await getCupboardItems())
   }
 
@@ -1621,12 +1628,20 @@ function MealsTab() {
           <div className="tool-list">
             {cupboard.map(item => (
               <div key={item.id} className="tool-row">
-                <div>
+                <div style={{ flex: 1 }}>
                   <div className="tool-title">{item.item}</div>
-                  <div className="tool-sub">
-                    {(item.quantity || 'Amount not set')}
-                    {item.expires_on ? ` · Expires ${item.expires_on}` : ''}
-                    {item.notes ? ` · ${item.notes}` : ''}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginTop: '.2rem' }}>
+                    <input
+                      className="tool-input"
+                      style={{ maxWidth: '160px' }}
+                      placeholder="Amount e.g. 1 bottle"
+                      value={cupboardEdits[item.id] ?? (item.quantity || '')}
+                      onChange={e => setCupboardEdits(prev => ({ ...prev, [item.id]: e.target.value }))}
+                      onBlur={() => handleSaveCupboardQty(item.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                    />
+                    {item.expires_on && <span className="tool-sub">Expires {item.expires_on}</span>}
+                    {item.notes && <span className="tool-sub">{item.notes}</span>}
                   </div>
                 </div>
                 <div className="tool-actions">
