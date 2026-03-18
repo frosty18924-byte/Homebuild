@@ -1442,6 +1442,7 @@ function MealsTab() {
         }
       } catch (err) {
         console.error('Add to cupboard failed:', err)
+        alert(`Could not add "${item}" to cupboard. Check console for details.`)
       }
     } else if (nextChecked) {
       setShoppingCheckState(key, { savedAmount: boughtAmount })
@@ -1583,6 +1584,9 @@ function MealsTab() {
                         <div style={{ textDecoration: checked ? 'line-through' : 'none', color: checked ? 'var(--grey)' : 'var(--charcoal)' }}>
                           {i.item}{i.amount ? ` — ${i.amount}` : ''}
                         </div>
+                        {checked && state?.addedToCupboard && (
+                          <span style={{ marginLeft: '.5rem', fontSize: '.75rem', color: 'var(--sage)', fontWeight: 600 }}>✓ cupboard</span>
+                        )}
                         {checked && (
                           <input
                             className="tool-input"
