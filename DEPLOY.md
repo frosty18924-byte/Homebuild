@@ -72,7 +72,7 @@ In your Vercel project → **Settings → Environment Variables**, add all the s
 - `NEXT_PUBLIC_HOUSEHOLD_ID`
 - `ANTHROPIC_API_KEY`
 - `NEXT_PUBLIC_APP_URL` ← set this to your actual Vercel URL after first deploy
-- `CRON_SECRET` ← make up a random string e.g. `hearth-cron-abc123`
+- `CRON_SECRET` ← required for daily Telegram cron (make up a random string e.g. `hearth-cron-abc123`)
 
 After adding variables, **redeploy** once.
 
@@ -160,3 +160,5 @@ hearth/
 **Deals not working** → Check `ANTHROPIC_API_KEY` is set and has credits
 
 **Telegram not sending** → Visit `api.telegram.org/bot[TOKEN]/getUpdates` and make sure you've sent at least one message to the bot first
+
+**Daily Telegram not sending** → In Vercel, confirm `CRON_SECRET` is set (and redeploy), then check Function Logs for `/api/notify` (401 = missing/incorrect cron auth, 502 = Telegram API rejected the message)

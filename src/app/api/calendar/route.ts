@@ -9,6 +9,29 @@ interface CalendarEvent {
     location?: string
     description?: string
     source?: string
+    isAway?: boolean
+}
+
+const AWAY_KEYWORDS = [
+    'away',
+    'holiday',
+    'vacation',
+    'travel',
+    'trip',
+    'out of office',
+    'ooo',
+    'out',
+]
+
+function looksLikeAway(summary: string, description: string, location: string, isAllDay: boolean) {
+    const hay = `${summary} ${description} ${location}`.toLowerCase()
+    const keyword = AWAY_KEYWORDS.some(k => hay.includes(k))
+    // Back-compat: some users encode away blocks as all-day events with a location set
+    return keyword || (isAllDay && !!location)
+}
+
+function dateKey(d: Date) {
+    return d.toISOString().slice(0, 10)
 }
 
 // ─── Parse duration from DURATION field e.g. PT6H30M ─────────────────────────
@@ -90,14 +113,17 @@ async function fetchCalendarEvents(icalUrl: string, daysAhead: number = 60, sour
 
             if (endDate < recentStart) continue
 
+            const isAway = looksLikeAway(summary, description, location, isAllDay)
+
             events.push({
                 title: summary,
-                start: startDate.toISOString(),
-                end: endDate.toISOString(),
+                start: isAllDay ? dateKey(startDate) : startDate.toISOString(),
+                end: isAllDay ? dateKey(endDate) : endDate.toISOString(),
                 allDay: isAllDay,
                 location,
                 description,
-                source: sourceName
+                source: sourceName,
+                isAway,
             })
         }
 
@@ -136,21 +162,27 @@ export async function GET(req: NextRequest) {
     // Also include the busyDays logic for backward compatibility if needed
     const busyDays = new Set<string>()
     mergedEvents.forEach(e => {
-        const start = new Date(e.start)
-        const end = new Date(e.end)
-        const durationHours = (end.getTime() - start.getTime()) / 3600000
+        if (!e.isAway) return
 
-        if (e.allDay && e.location) {
+        if (e.allDay) {
+            // start/end are date-keys for all-day events; end is typically exclusive
+            const startKey = e.start
+            const endKey = e.end
+            const start = new Date(startKey + 'T00:00:00')
+            const end = new Date(endKey + 'T00:00:00')
+
             let d = new Date(start)
             const endAdj = new Date(end)
             endAdj.setDate(endAdj.getDate() - 1)
             while (d <= endAdj) {
-                busyDays.add(d.toISOString().split('T')[0])
+                busyDays.add(dateKey(d))
                 d.setDate(d.getDate() + 1)
             }
-        } else if (e.location && durationHours >= 6) {
-            busyDays.add(start.toISOString().split('T')[0])
+            return
         }
+
+        const start = new Date(e.start)
+        busyDays.add(dateKey(start))
     })
 
     return NextResponse.json({

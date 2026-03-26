@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import {
@@ -16,7 +16,7 @@ import {
   type Chore, type Bill, type BillDeal, type MealPlan, type Notification, type Household,
   type FavoriteMeal, type CupboardItem,
 } from '@/lib/supabase'
-import { format, addDays, startOfToday } from 'date-fns'
+import { format, addDays, startOfToday, startOfWeek } from 'date-fns'
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const STYLE = `
@@ -258,12 +258,14 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--charcoal)
 .cal-day-num{font-size:.75rem;font-weight:700;color:var(--grey);margin-bottom:.2rem}
 .cal-day.today{background:rgba(193,113,79,.05)}
 .cal-day.today .cal-day-num{color:var(--terra);font-size:.85rem}
+.cal-day.away-day{background:rgba(61,53,48,.04)}
 .cal-ev{font-size:.62rem;padding:.2rem .4rem;border-radius:6px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:transform .1s}
 .cal-ev:hover{transform:scale(1.02)}
 .cal-ev.google{background:rgba(122,158,126,.15);color:var(--sage);border-left:2px solid var(--sage)}
 .cal-ev.chore{background:rgba(193,113,79,.12);color:var(--terra);border-left:2px solid var(--terra)}
 .cal-ev.bill{background:rgba(196,150,42,.12);color:var(--gold);border-left:2px solid var(--gold)}
 .cal-ev.away{background:var(--charcoal);color:var(--cream);border-left:2px solid var(--gold-l)}
+.cal-src{opacity:.85;margin-left:.35rem;font-weight:700;font-size:.58rem;letter-spacing:.04em}
 `
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -785,7 +787,24 @@ function BillsTab({ bills, loading, onEdit, onDelete, onAdd }: { bills: Bill[]; 
                 <div className="bill-main">
                   <div className="bill-ico" style={{ background: `${bill.color} 18` }}>{bill.icon}</div>
                   <div className="bill-info">
-                    <div className="bill-name">{bill.name}</div>
+                    <div className="bill-name" style={{ display: 'flex', alignItems: 'center', gap: '.45rem' }}>
+                      <span>{bill.name}</span>
+                      <span
+                        className="badge"
+                        style={{
+                          fontSize: '.62rem',
+                          padding: '.12rem .45rem',
+                          borderRadius: '999px',
+                          background: 'rgba(61,53,48,.08)',
+                          color: 'var(--grey)',
+                          border: '1px solid rgba(61,53,48,.10)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '.06em',
+                        }}
+                      >
+                        {(bill.frequency || 'monthly') === 'annually' ? 'ANNUAL' : 'MONTHLY'}
+                      </span>
+                    </div>
                     <div className="bill-detail">
                       {bill.provider}
                       {renewDays !== null && (
@@ -953,12 +972,13 @@ function MealsTab() {
   const [cupNotes, setCupNotes] = useState('')
   const [cupboardEdits, setCupboardEdits] = useState<Record<string, string>>({})
   const [shoppingChecks, setShoppingChecks] = useState<Record<string, { checked: boolean; boughtAmount: string; savedAmount: string; addedToCupboard: boolean }>>({})
-  const start = startOfToday()
+  const [weekAnchor, setWeekAnchor] = useState(() => startOfWeek(startOfToday(), { weekStartsOn: 1 }))
+  const today = startOfToday()
 
   const load = async () => {
     setLoading(true)
-    const startD = format(start, 'yyyy-MM-dd')
-    const endD = format(addDays(start, 13), 'yyyy-MM-dd')
+    const startD = format(weekAnchor, 'yyyy-MM-dd')
+    const endD = format(addDays(weekAnchor, 13), 'yyyy-MM-dd')
     const [mealData, favoriteData, cupboardData] = await Promise.all([
       getMealPlan(startD, endD),
       getFavoriteMeals(),
@@ -970,12 +990,29 @@ function MealsTab() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [weekAnchor])
+
+  // Auto-roll the 2-week window over at midnight local time (so Mon–Sun tabs update without a refresh).
+  useEffect(() => {
+    let timeout: any
+    const schedule = () => {
+      const now = new Date()
+      const next = new Date(now)
+      next.setHours(24, 1, 0, 0) // 00:01 tomorrow (avoid edge cases right at midnight)
+      timeout = setTimeout(() => {
+        setWeekAnchor(startOfWeek(startOfToday(), { weekStartsOn: 1 }))
+        setWeek(0)
+        schedule()
+      }, Math.max(1000, next.getTime() - now.getTime()))
+    }
+    schedule()
+    return () => clearTimeout(timeout)
+  }, [])
 
   const generate = async () => {
     setGenerating(true)
     try {
-      const weekStart = addDays(start, week * 7)
+      const weekStart = addDays(weekAnchor, week * 7)
       const res = await fetch('/api/meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
@@ -1229,8 +1266,8 @@ function MealsTab() {
       await consumeCupboard(fav.ingredients)
       setTargetSlot(null)
       setSelectMode(false)
-      const startD = format(start, 'yyyy-MM-dd')
-      const endD = format(addDays(start, 13), 'yyyy-MM-dd')
+      const startD = format(weekAnchor, 'yyyy-MM-dd')
+      const endD = format(addDays(weekAnchor, 13), 'yyyy-MM-dd')
       setMeals(await getMealPlan(startD, endD))
     } catch (err) {
       console.error('Apply favorite failed:', err)
@@ -1275,9 +1312,9 @@ function MealsTab() {
     setCupboard(await getCupboardItems())
   }
 
-  const days = Array.from({ length: 14 }, (_, i) => addDays(start, i))
+  const days = Array.from({ length: 14 }, (_, i) => addDays(weekAnchor, i))
   const weekDays = days.slice(week * 7, week * 7 + 7)
-  const todayKey = format(start, 'yyyy-MM-dd')
+  const todayKey = format(today, 'yyyy-MM-dd')
 
   const mealMap: Record<string, Record<string, MealPlan>> = {}
   meals.forEach(m => {
@@ -1343,7 +1380,7 @@ function MealsTab() {
 
   const shopping = shoppingByStore()
   const shoppingStores = Object.keys(shopping)
-  const weekStartKey = format(addDays(start, week * 7), 'yyyy-MM-dd')
+  const weekStartKey = format(addDays(weekAnchor, week * 7), 'yyyy-MM-dd')
   useEffect(() => {
     const loadChecks = async () => {
       const rows = await getShoppingChecks(weekStartKey)
@@ -1484,15 +1521,15 @@ function MealsTab() {
           <p className="section-sub">AI-generated · 2-week rolling · stored in Supabase</p>
         </div>
         <button className="btn-out" onClick={generate} disabled={generating}>
-          {generating ? '⏳ Generating…' : '✨ Generate for This Week'}
+          {generating ? '⏳ Generating…' : `✨ Generate for ${week === 0 ? 'This Week' : 'Next Week'}`}
         </button>
       </div>
       <div className="week-tabs">
         <button className={`wtab ${week === 0 ? 'active' : ''} `} onClick={() => setWeek(0)}>
-          Week 1 · {fmt(start)} – {fmt(addDays(start, 6))}
+          This Week · {fmt(weekAnchor)} – {fmt(addDays(weekAnchor, 6))}
         </button>
         <button className={`wtab ${week === 1 ? 'active' : ''} `} onClick={() => setWeek(1)}>
-          Week 2 · {fmt(addDays(start, 7))} – {fmt(addDays(start, 13))}
+          Next Week · {fmt(addDays(weekAnchor, 7))} – {fmt(addDays(weekAnchor, 13))}
         </button>
       </div>
       {loading ? (
@@ -1703,6 +1740,7 @@ interface CalEvent {
   title: string
   start: string
   end: string
+  allDay?: boolean
   type: 'google' | 'chore' | 'bill' | 'away'
   icon?: string
   source?: string
@@ -1719,10 +1757,14 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
   const [events, setEvents] = useState<CalEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [viewDate, setViewDate] = useState(new Date())
+  const [showMonthlyBills, setShowMonthlyBills] = useState(false)
+  const [awayDays, setAwayDays] = useState<string[]>([])
+  const awayDaySet = useMemo(() => new Set(awayDays), [awayDays])
 
   const load = useCallback(async () => {
     setLoading(true)
     let googleEvents: CalEvent[] = []
+    let busy: string[] = []
     if (calUrl1 || calUrl2) {
       try {
         const params = new URLSearchParams()
@@ -1734,14 +1776,20 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
           headers: { ...(await authHeaders()) },
         })
         const data = await res.json()
+        busy = data.busyDays || []
         googleEvents = (data.events || []).map((e: any) => ({
-          ...e,
-          type: e.allDay && e.location ? 'away' : 'google'
+          title: e.title,
+          start: e.start,
+          end: e.end,
+          allDay: e.allDay,
+          source: e.source,
+          type: e.isAway ? 'away' : 'google'
         }))
       } catch (err) {
         console.error('Failed to fetch google events', err)
       }
     }
+    setAwayDays(busy)
 
     const choreEvents: CalEvent[] = chores.map(c => {
       const due = nextDueDate(c)
@@ -1761,7 +1809,8 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
     for (let m = -1; m <= 2; m++) {
       const baseDate = new Date(today.getFullYear(), today.getMonth() + m, 1)
       bills.forEach(b => {
-        if (b.due_day_of_month) {
+        const freq = b.frequency || 'monthly'
+        if (freq === 'monthly' && showMonthlyBills && b.due_day_of_month) {
           const due = new Date(baseDate.getFullYear(), baseDate.getMonth(), b.due_day_of_month)
           const key = localDateKey(due)
           billEvents.push({
@@ -1772,13 +1821,14 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
             icon: b.icon
           })
         }
+        // Renewal markers are always useful regardless of monthly/annual billing
         if (b.renewal_date) {
           const ren = parseDateInput(b.renewal_date)
           if (!ren) return
           if (ren.getMonth() === baseDate.getMonth() && ren.getFullYear() === baseDate.getFullYear()) {
             const key = localDateKey(ren)
             billEvents.push({
-              title: `RENEW: ${b.name} `,
+              title: `RENEW: ${b.name}`,
               start: key,
               end: key,
               type: 'bill',
@@ -1791,7 +1841,7 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
 
     setEvents([...googleEvents, ...choreEvents, ...billEvents])
     setLoading(false)
-  }, [chores, bills, calUrl1, calUrl2, nameA, nameB])
+  }, [chores, bills, calUrl1, calUrl2, nameA, nameB, showMonthlyBills])
 
   useEffect(() => { load() }, [load])
 
@@ -1814,11 +1864,20 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
 
   const getEventsForDay = (d: Date) => {
     const dKey = localDateKey(d)
-    return events
+    const base = events
       .filter(e => {
-        const dt = parseDateInput(e.start)
-        if (!dt) return false
-        return localDateKey(dt) === dKey
+        const start = parseDateInput(e.start)
+        if (!start) return false
+
+        // Range inclusion for all-day events (including multi-day holidays)
+        if (e.allDay) {
+          const startKey = localDateKey(start)
+          const end = parseDateInput(e.end)
+          const endKey = end ? localDateKey(end) : startKey
+          return dKey >= startKey && dKey < endKey
+        }
+
+        return localDateKey(start) === dKey
       })
       .sort((a, b) => {
         const aAway = a.type === 'away'
@@ -1826,6 +1885,12 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
         if (aAway !== bAway) return aAway ? -1 : 1
         return a.title.localeCompare(b.title)
       })
+
+    if (awayDaySet.has(dKey) && !base.some(e => e.type === 'away')) {
+      const synthetic: CalEvent = { title: 'Away', start: dKey, end: dKey, allDay: true, type: 'away', icon: '✈️' }
+      return [synthetic, ...base]
+    }
+    return base
   }
 
   return (
@@ -1834,6 +1899,17 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
         <div>
           <h2 className="section-title">Household <span>Calendar</span></h2>
           <p className="section-sub">Synced Google events · chores · bills · away days</p>
+          <div style={{ marginTop: '.5rem', display: 'flex', gap: '.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.78rem', color: 'var(--grey)' }}>
+              <input
+                type="checkbox"
+                checked={showMonthlyBills}
+                onChange={e => setShowMonthlyBills(e.target.checked)}
+              />
+              Show monthly bill payments
+            </label>
+            <span style={{ fontSize: '.74rem', color: 'var(--grey)' }}>Renewal reminders always show.</span>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '.6rem' }}>
           <button className="btn-out" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}>◀</button>
@@ -1861,13 +1937,14 @@ function CalendarTab({ chores, bills, calUrl1, calUrl2, nameA, nameB }: {
             days.map((day, i) => {
               if (!day.date) return <div key={`pad-${i}`} className="cal-day off" />
               const isToday = day.date.toDateString() === new Date().toDateString()
+              const isAwayDay = awayDaySet.has(localDateKey(day.date))
               const dayEvents = getEventsForDay(day.date)
               return (
-                <div key={i} className={`cal-day ${isToday ? 'today' : ''}`}>
+                <div key={i} className={`cal-day ${isToday ? 'today' : ''} ${isAwayDay ? 'away-day' : ''}`}>
                   <div className="cal-day-num">{day.date.getDate()}</div>
                   {dayEvents.map((ev, ei) => (
                     <div key={ei} className={`cal-ev ${ev.type}`} title={`${ev.title}${ev.source ? ` (${ev.source})` : ''}`}>
-                      {ev.icon} {ev.title}
+                      {ev.icon ? `${ev.icon} ` : ''}{ev.title}{ev.source ? <span className="cal-src">{ev.source}</span> : null}
                     </div>
                   ))}
                 </div>
@@ -2152,6 +2229,7 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
   const [busyDays, setBusyDays] = useState<string[]>([])
   const [calTesting, setCalTesting] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [telegramError, setTelegramError] = useState('')
   const [members, setMembers] = useState<{ user_id: string; email: string | null; role: string }[]>([])
   const [memberEmail, setMemberEmail] = useState('')
   const [memberRole, setMemberRole] = useState<'member' | 'owner'>('member')
@@ -2222,24 +2300,40 @@ function SettingsTab({ household, onHouseholdUpdate }: { household: Household | 
   }
 
   const saveTelegram = async () => {
+    setTelegramError('')
     setTesting(true)
-    const { data: hh } = await supabase.from('households').select('id').single()
-    if (hh) await supabase.from('households').update({
-      telegram_bot_token: botToken,
-      telegram_chat_id: chatId,
-    }).eq('id', hh.id)
-    await fetch('/api/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-      body: JSON.stringify({
-        botToken, chatId, message: `🏡 <b>Hearth Test</b>
+    try {
+      const targetId = HOUSEHOLD_ID || household?.id
+      if (!targetId) throw new Error('Household ID not set')
 
-Your Telegram notifications are working! You'll receive daily updates here at 8am every morning.` }),
-    })
-    setTesting(false)
-    setTelegramSaved(true)
-    onHouseholdUpdate()
-    setTimeout(() => setTelegramSaved(false), 3000)
+      const { error: saveErr } = await supabase
+        .from('households')
+        .update({ telegram_bot_token: botToken.trim(), telegram_chat_id: chatId.trim() })
+        .eq('id', targetId)
+      if (saveErr) throw new Error('Database save failed: ' + saveErr.message)
+
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        body: JSON.stringify({
+          botToken,
+          chatId,
+          message: `🏡 <b>Hearth Test</b>
+
+Your Telegram notifications are working! You'll receive daily updates here at 8am every morning.`,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.ok) throw new Error(data?.detail || data?.error || 'Telegram test failed')
+
+      setTelegramSaved(true)
+      onHouseholdUpdate()
+      setTimeout(() => setTelegramSaved(false), 3000)
+    } catch (err: any) {
+      setTelegramError(err?.message || 'Telegram setup failed')
+    } finally {
+      setTesting(false)
+    }
   }
 
   const saveAndTestCalendar = async () => {
@@ -2343,6 +2437,7 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
             {testing ? 'Sending test…' : telegramSaved ? '✓ Saved & Tested' : 'Save & Test'}
           </button>
         </div>
+        {telegramError && <div style={{ marginTop: '.6rem', fontSize: '.78rem', color: 'var(--terra)', fontWeight: '700' }}>⚠️ {telegramError}</div>}
       </div>
 
       <div className="card">
@@ -2464,7 +2559,7 @@ Your Telegram notifications are working! You'll receive daily updates here at 8a
         )}
         {calSaved && busyDays.length === 0 && (
           <div style={{ marginTop: '.8rem', padding: '.7rem 1rem', background: 'rgba(122,158,126,.1)', borderRadius: '10px', border: '1px solid rgba(122,158,126,.2)', fontSize: '.78rem', color: 'var(--sage)', fontWeight: '700' }}>
-            ✓ Calendar URLs saved successfully. No away days found in the next 30 days — add events with a location lasting 6+ hours and they'll appear here.
+            ✓ Calendar URLs saved successfully. No away days found in the next 30 days — add events titled “away/holiday/travel” (or all-day events with a location) and they’ll appear here.
           </div>
         )}
         {calError && (
